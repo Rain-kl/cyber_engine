@@ -1,3 +1,5 @@
 pydantic
 fastapi
 uvicorn
+pydantic_settings
+loguru
