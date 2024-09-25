@@ -36,6 +36,12 @@ manager = ConnectionManager()
 
 
 async def handle_message(data: str, websocket: WebSocket):
+    """
+    Handle incoming message from websocket
+    :param data:
+    :param websocket:
+    :return:
+    """
     try:
         data = json.loads(data)
         input_ = ParseWSMessage(data)
