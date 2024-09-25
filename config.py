@@ -4,6 +4,14 @@ from pydantic_settings import BaseSettings
 class Configer(BaseSettings):
     host: str
     port: int
+    llm_enable_proxy: bool
+    proxy_host: str
+    proxy_port: int
+    llm_base_url: str
+    llm_api_key: str
+    llm_model: str
+
+
 
     # 可以从配置文件加载配置
     class Config:

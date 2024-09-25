@@ -1,11 +1,12 @@
-from venv import logger
+import asyncio
+import json
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from typing import List
-
+from loguru import logger
+from engine_core.core import ponder
 from model import ResponseModel
 from .ws_utils import ParseWSMessage
-import json
 
 app = FastAPI()
 
@@ -23,7 +24,7 @@ class ConnectionManager:
 
     @staticmethod
     async def send_private_msg(message: str, websocket: WebSocket):
-        logger.debug(f"Sending message: {message}")
+        logger.debug(f"Send -> {message}")
         await websocket.send_text(message)
 
     async def broadcast(self, message: str):
@@ -34,33 +35,40 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
+async def handle_message(data: str, websocket: WebSocket):
+    try:
+        data = json.loads(data)
+        input_ = ParseWSMessage(data)
+    except (ValueError, TypeError) as e:
+        await manager.send_private_msg(f"Invalid Input: {str(e)}", websocket)
+        return
+
+    # Simulating generation with async sleep
+    pond_msg = await ponder(input_.msg)
+
+    response_data = ResponseModel(
+        user_id=int(input_.user_id),
+        msg=str(pond_msg)
+    ).model_dump()
+
+    await manager.send_private_msg(json.dumps(response_data, ensure_ascii=False), websocket)
+
+
 @app.websocket("/ws/{client_channel}")
 async def websocket_endpoint(websocket: WebSocket, client_channel: str):
     await manager.connect(websocket)
+
+    tasks = []
     try:
         while True:
             data = await websocket.receive_text()
-            try:
-                data = json.loads(data)
-            except:
-                await manager.send_private_msg("Invalid JSON", websocket)
-                continue
-            try:
-                print(data)
-                input_ = ParseWSMessage(data)
-            except:
-                await manager.send_private_msg("Invalid Input", websocket)
-                continue
-            await manager.send_private_msg(
-                json.dumps(
-                    ResponseModel(
-                        user_id=int(input_.user_id),
-                        msg=str(input_.msg)
-                    ).model_dump()
-                ),
-                websocket
-            )
+            logger.debug(f"Received <- {data}")
+            task = asyncio.create_task(handle_message(data, websocket))
+            tasks.append(task)
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         logger.info(f"Client #{client_channel} left the chat")
-        # await manager.broadcast(f"Client #{client_channel} left the chat")
+    finally:
+        if tasks:
+            await asyncio.gather(*tasks)
