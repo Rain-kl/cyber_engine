@@ -34,8 +34,8 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-@app.websocket("/ws/{client_id}")
-async def websocket_endpoint(websocket: WebSocket, client_id: int):
+@app.websocket("/ws/{client_channel}")
+async def websocket_endpoint(websocket: WebSocket, client_channel: str):
     await manager.connect(websocket)
     try:
         while True:
@@ -54,13 +54,13 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
             await manager.send_private_msg(
                 json.dumps(
                     ResponseModel(
-                        username=input_.username,
-                        msg=input_.msg
+                        user_id=int(input_.user_id),
+                        msg=str(input_.msg)
                     ).model_dump()
                 ),
                 websocket
             )
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-        logger.info(f"Client #{client_id} left the chat")
-        await manager.broadcast(f"Client #{client_id} left the chat")
+        logger.info(f"Client #{client_channel} left the chat")
+        # await manager.broadcast(f"Client #{client_channel} left the chat")
