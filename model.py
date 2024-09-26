@@ -9,3 +9,8 @@ class InputModel(BaseModel):
 class ResponseModel(BaseModel):
     user_id: int  # 用户名
     msg: str  # 消息内容
+
+
+class OpenaiChatMessageModel(BaseModel):
+    role: str
+    content: str

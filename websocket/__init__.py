@@ -1,10 +1,12 @@
 import asyncio
 import json
+import time
+from os import times
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from typing import List
 from loguru import logger
-from engine_core.core import ponder
+from engine_core import ponder
 from model import ResponseModel
 from .ws_utils import ParseWSMessage
 
@@ -49,8 +51,8 @@ async def handle_message(data: str, websocket: WebSocket):
         await manager.send_private_msg(f"Invalid Input: {str(e)}", websocket)
         return
 
-    # Simulating generation with async sleep
-    pond_msg = await ponder(input_.msg)
+    # Message Processed
+    pond_msg = await ponder(input_)
 
     response_data = ResponseModel(
         user_id=int(input_.user_id),

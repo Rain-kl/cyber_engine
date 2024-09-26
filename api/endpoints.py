@@ -5,16 +5,9 @@ from pydantic import BaseModel
 from datetime import datetime, timedelta
 from typing import List, Optional
 
+from model import ResponseModel, InputModel
+
 router = APIRouter()
-
-
-class InputModel(BaseModel):
-    username: str  # 用户名
-    msg: str  # 消息内容
-
-
-class ResponseModel(BaseModel):
-    msg: str  # 消息内容
 
 
 # 定义API端点

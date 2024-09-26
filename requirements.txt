@@ -4,3 +4,5 @@ uvicorn
 pydantic_settings
 loguru
 openai
+aiodiskqueue
+aiosqlite
