@@ -1,11 +1,10 @@
 import asyncio
 import json
-import time
-from os import times
+from typing import List
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from typing import List
 from loguru import logger
+
 from engine_core import ponder
 from model import ResponseModel
 from .ws_utils import ParseWSMessage
@@ -26,7 +25,7 @@ class ConnectionManager:
 
     @staticmethod
     async def send_private_msg(message: str, websocket: WebSocket):
-        logger.debug(f"Send -> {message}")
+        logger.info(f"Send -> {message}")
         await websocket.send_text(message)
 
     async def broadcast(self, message: str):
@@ -70,7 +69,7 @@ async def websocket_endpoint(websocket: WebSocket, client_channel: str):
     try:
         while True:
             data = await websocket.receive_text()
-            logger.debug(f"Received <- {data}")
+            logger.info(f"Received <- {data}")
             task = asyncio.create_task(handle_message(data, websocket))
             tasks.append(task)
 
