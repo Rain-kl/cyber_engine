@@ -25,6 +25,26 @@ class RedisSqlite(RedisABC):
                         )''')
             await db.commit()
 
+    async def close(self):
+        pass
+
+    async def length(self, key: str = None) -> int:
+        async with aiosqlite.connect(self.db_path) as db:
+            if key:
+                cursor = await db.execute('SELECT value FROM kv WHERE key = ?', (key,))
+                result = await cursor.fetchone()
+                if result:
+                    return len(result[0])
+                else:
+                    cursor = await db.execute('SELECT COUNT(*) FROM list WHERE key = ?', (key,))
+                    result = await cursor.fetchone()
+
+                    return result[0] if result else 0
+            else:
+                cursor = await db.execute('SELECT COUNT(*) FROM kv')
+                result = await cursor.fetchone()
+                return result
+
     async def set(self, key: str, value: str):
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute('INSERT OR REPLACE INTO kv (key, value) VALUES (?, ?)', (key, value))
@@ -62,6 +82,19 @@ class RedisSqlite(RedisABC):
                 row = await cursor.fetchone()
                 if row and row[0] is not None:
                     value = row[0]
+                    await db.execute('DELETE FROM list WHERE key = ? AND position = ?', (key, row[1]))
+                    await db.commit()
+                    return value
+                return None
+
+    async def lpop(self, key):
+        async with aiosqlite.connect(self.db_path) as db:
+            # 查询最小position对应的value
+            async with db.execute('SELECT value, MIN(position) FROM list WHERE key = ?', (key,)) as cursor:
+                row = await cursor.fetchone()
+                if row and row[0] is not None:
+                    value = row[0]
+                    # 删除该最小position的元素
                     await db.execute('DELETE FROM list WHERE key = ? AND position = ?', (key, row[1]))
                     await db.commit()
                     return value

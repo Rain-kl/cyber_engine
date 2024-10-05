@@ -18,9 +18,16 @@ class RedisABC(ABC):
         pass
 
     @abstractmethod
-    async def get(self, key: str) -> str:
+    async def close(self):
         pass
 
+    @abstractmethod
+    async def length(self):
+        pass
+
+    @abstractmethod
+    async def get(self, key: str) -> str:
+        pass
 
     @abstractmethod
     async def delete(self, key: str):
@@ -44,4 +51,8 @@ class RedisABC(ABC):
 
     @abstractmethod
     async def rpop(self, key: str) -> str:
+        pass
+
+    @abstractmethod
+    async def lpop(self, key: str) -> str:
         pass

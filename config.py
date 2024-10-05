@@ -11,8 +11,6 @@ class Configer(BaseSettings):
     llm_api_key: str
     llm_model: str
 
-
-
     # 可以从配置文件加载配置
     class Config:
         env_file = ".env"

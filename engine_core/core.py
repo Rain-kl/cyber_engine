@@ -10,7 +10,7 @@ from openai import AsyncOpenAI
 
 from config import config
 from model import InputModel, OpenaiChatMessageModel
-from .redis_ntr import RedisSqlite
+from redis_ntr import RedisSqlite
 from .prompt import PromptGeneratorCN
 from .plugins import tools
 
