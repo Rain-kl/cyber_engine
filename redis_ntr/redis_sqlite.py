@@ -50,12 +50,15 @@ class RedisSqlite(RedisABC):
             await db.execute('INSERT OR REPLACE INTO kv (key, value) VALUES (?, ?)', (key, value))
             await db.commit()
 
-    async def get(self, key: str) -> str | None:
+    async def get(self, key: str) -> str | list | None:
         async with aiosqlite.connect(self.db_path) as db:
             async with db.execute(f'SELECT value FROM kv WHERE key = ?', (key,)) as cursor:
                 row = await cursor.fetchone()
                 if row:
-                    return row[0]
+                    if len(row) == 1:
+                        return row[0]
+                    else:
+                        return list(row)
                 return None
 
     async def lpush(self, key, value):
@@ -75,6 +78,12 @@ class RedisSqlite(RedisABC):
                 position = row[0] + 1 if row[0] is not None else 0
             await db.execute('INSERT INTO list (key, value, position) VALUES (?, ?, ?)', (key, value, position))
             await db.commit()
+
+    async def get_list(self, key) -> list:
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute('SELECT value FROM list WHERE key = ?', (key,)) as cursor:
+                row = await cursor.fetchall()
+                return [i[0] for i in row]
 
     async def rpop(self, key):
         async with aiosqlite.connect(self.db_path) as db:
@@ -100,8 +109,25 @@ class RedisSqlite(RedisABC):
                     return value
                 return None
 
-    async def delete(self, name: str):
-        await self.delete(name)
+    async def delete(self, key: str):
+        """
+        删除键值对
+        :param key:
+        :return:
+        """
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute('DELETE FROM kv WHERE key = ?', (key,))
+            await db.commit()
+
+    async def empty(self, key: str):
+        """
+        清空列表
+        :param key:
+        :return:
+        """
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute('DELETE FROM list WHERE key = ?', (key,))
+            await db.commit()
 
     async def exists(self, key):
         async with aiosqlite.connect(self.db_path) as db:

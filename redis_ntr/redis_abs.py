@@ -50,9 +50,17 @@ class RedisABC(ABC):
         pass
 
     @abstractmethod
+    async def get_list(self, key) -> list:
+        pass
+
+    @abstractmethod
     async def rpop(self, key: str) -> str:
         pass
 
     @abstractmethod
     async def lpop(self, key: str) -> str:
+        pass
+
+    @abstractmethod
+    async def empty(self, key: str):
         pass

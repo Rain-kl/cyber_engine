@@ -26,6 +26,20 @@ class TestRedisSqlite:
         await redis.close()
 
     @pytest.mark.asyncio
+    async def test_append(self):
+        """测试set和get功能"""
+        redis = RedisSqlite('../data/test_mq.db')
+        await redis.connect()
+        await redis.empty("a")
+        await redis.rpush("a", "bhs")
+        await redis.rpush("a", "ash")
+        value = await redis.get_list("a")
+        assert value == ["bhs", "ash"]
+        await redis.empty("a")
+
+
+
+    @pytest.mark.asyncio
     async def test_stack_operations(self):
         """测试队列操作"""
         redis = RedisSqlite('../data/test_mq.db')
