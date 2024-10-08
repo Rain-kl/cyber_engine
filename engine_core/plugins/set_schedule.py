@@ -1,10 +1,21 @@
+import asyncio
+
 from loguru import logger
 
+from redis_ntr import RedisSqlite
 
-def set_schedule(trigger_time, tasks):
+
+async def set_schedule(trigger_time, tasks):
     logger.info(f"Setting schedule, trigger time: {trigger_time}, tasks: {tasks}")
+
+    try:
+        redis = RedisSqlite("./data/scheduler.db")
+        await redis.connect()
+        await redis.rpush(trigger_time, tasks)
+    except Exception as e:
+        logger.error(f'error: {e}')
+        return f'error: {e}'
     return "Schedule set successfully"
-    pass
 
 
 schedule_tools = {

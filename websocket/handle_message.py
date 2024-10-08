@@ -8,7 +8,7 @@ from .connection_manager import manager
 from .ws_utils import ParseWSMessage
 
 
-async def handle_message(data: str, websocket: WebSocket):
+async def handle_message(data: str, websocket: WebSocket) -> None:
     """
     Handle incoming message from websocket
     :param data:

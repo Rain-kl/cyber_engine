@@ -26,6 +26,7 @@ async def websocket_endpoint(websocket: WebSocket, client_channel: str):
             task = asyncio.create_task(handle_message(data, websocket))
             tasks.append(task)
 
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         logger.info(f"Client #{client_channel} left the chat")
