@@ -3,9 +3,12 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from loguru import logger
+from setuptools.command.setopt import config_file
 
-sender_email = "your email"
-authorization_code = "your authorization code"
+from config import config
+
+sender_email = config.email_sender
+authorization_code = config.email_auth_code
 
 
 def send_email(subject, body, recipients) -> str:
