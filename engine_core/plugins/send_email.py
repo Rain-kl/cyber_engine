@@ -8,7 +8,7 @@ sender_email = "your email"
 authorization_code = "your authorization code"
 
 
-def send_email(subject, body, recipients):
+def send_email(subject, body, recipients) -> str:
     try:
         # 创建 MIMEMultipart 对象
         message = MIMEMultipart()
@@ -28,7 +28,7 @@ def send_email(subject, body, recipients):
         return f"Sending email to {recipients} with subject: {subject} and body: {body}"
     except Exception as e:
         logger.error(f"Send email error: {e}")
-        return f"Send email error: {e}"
+        raise e
 
 
 email_tools = {
