@@ -33,6 +33,7 @@ async def send_email(subject, body, recipients, *, user_id) -> str:
         )
 
         logger.success(f"Sending email to {recipients} with subject: {subject} and body: {body}")
+
         elogger.log(EventLogModel(
             user_id=user_id,
             type='func',

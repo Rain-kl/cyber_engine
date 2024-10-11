@@ -39,6 +39,7 @@ class EventLog:
             print(f"An error occurred: {e}")
 
     def log(self, model: EventLogModel):
+        self.init()
         user_id = model.user_id
         type_ = model.type
         level = model.level
@@ -55,4 +56,3 @@ class EventLog:
 
 
 elogger = EventLog(db_path='./data/event_log.db')
-elogger.init()

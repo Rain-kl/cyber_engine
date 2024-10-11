@@ -7,8 +7,8 @@ from .connection_manager import manager
 
 async def scheduled_broadcast():
     redis = RedisSqlite("./data/scheduler.db")
-    await redis.connect()
     while True:
+        await redis.connect()
         current_time = datetime.now()
         formatted_time = current_time.strftime('%Y%m%d%H%M')
         result = await redis.get_list(formatted_time)
@@ -16,4 +16,4 @@ async def scheduled_broadcast():
             for msg in result:
                 await manager.broadcast(msg)
             await redis.delete(formatted_time)
-        await asyncio.sleep(60)
+        await asyncio.sleep(5)
