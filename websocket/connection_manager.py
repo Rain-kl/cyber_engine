@@ -3,6 +3,8 @@ from typing import List
 from fastapi import WebSocket
 from loguru import logger
 
+from model import ResponseModel
+
 
 class ConnectionManager:
     def __init__(self):
@@ -16,14 +18,19 @@ class ConnectionManager:
         self.active_connections.remove(websocket)
 
     @staticmethod
-    async def send_private_msg(message: str, websocket: WebSocket):
-        logger.info(f"Send -> {message}")
-        await websocket.send_text(message)
+    async def send_private_msg(message: ResponseModel, websocket: WebSocket):
+        if isinstance(message, ResponseModel):
+            logger.info(f"Send -> {message}")
+            await websocket.send_text(message.__str__())
+        else:
+            await websocket.send_text(f"Error: {message}")
 
-    async def broadcast(self, message: str):
+
+
+    async def broadcast(self, message: ResponseModel):
         for connection in self.active_connections:
             logger.info(f"Broadcast -> {message}")
-            # await connection.send_text(message)
+            await connection.send_text(message.__str__())
 
 
 manager = ConnectionManager()

@@ -1,13 +1,14 @@
 import asyncio
 import inspect
 import json
+import re
 from datetime import datetime
 from typing import List, Dict
 
 import openai.resources
 from loguru import logger
 from openai import AsyncOpenAI
-
+from openai.resources import AsyncChat as OpenAIAsyncChat
 from config import config
 from model import InputModel, OpenaiChatMessageModel
 from redis_ntr import RedisSqlite
@@ -59,7 +60,7 @@ class EngineCore:
                 )
         return self.chat_message
 
-    async def pond(self, update_strategy=UpdateStrategy.ALL_UPDATE) -> openai.resources.AsyncChat.completions:
+    async def pond(self, update_strategy=UpdateStrategy.ALL_UPDATE) -> OpenAIAsyncChat.completions:
         client = AsyncOpenAI(
             base_url=config.llm_base_url,
             api_key=config.llm_api_key,
@@ -67,33 +68,40 @@ class EngineCore:
         chat_message = await self._update_chat_message(update_strategy)
 
         logger.debug("start chat")
-        chat_completion = await client.chat.completions.create(
-            model=config.llm_model,
-            temperature=0.7,
-            # response_format={"type": "json_object"},
-            messages=[PromptGeneratorCN().generate_init.model_dump()] + chat_message,
-            tools=tools,
-        )
+
+        async def create_chat_completion():
+            chat_completion = await client.chat.completions.create(
+                model=config.llm_model,
+                temperature=0.7,
+                # response_format={"type": "json_object"},
+                messages=[PromptGeneratorCN().generate_init.model_dump()] + chat_message,
+                tools=tools,
+            )
+            return chat_completion
+
+        chat_completion = await create_chat_completion()
+
         return await self.chat_completion_process(chat_completion)
 
-    async def chat_completion_process(self, chat_completion: openai.resources.AsyncChat.completions):
+    async def chat_completion_process(
+            self, chat_completion: OpenAIAsyncChat.completions
+    ) -> OpenAIAsyncChat.completions:
+        """
+        处理chat_completion的结果, 并执行工具函数。最后更新进入redis的消息历史，并清空input_
+        :param chat_completion:
+        :return:
+        """
         if chat_completion.choices[0].message.tool_calls:
             for tool_call in chat_completion.choices[0].message.tool_calls:
 
                 tool_name = tool_call.function.name
                 tool_args = json.loads(tool_call.function.arguments)
-                tool_args['user_id'] = self.input_.user_id
+                tool_args['input_'] = self.input_
 
                 logger.debug(f"tool_name - {tool_name}")
                 logger.debug(f"tool_args - {tool_args}")
                 try:
                     tool = load_plugins()[tool_name]
-                    self.chat_message.append(
-                        OpenaiChatMessageModel(
-                            role="assistant",
-                            content=f"执行函数{tool_name}",
-                        ).model_dump()
-                    )
                     if inspect.iscoroutinefunction(tool):
                         tool_result = await asyncio.create_task(tool(**tool_args))
                     else:
@@ -111,6 +119,7 @@ class EngineCore:
                         ).model_dump()
                     )
                 except Exception as e:
+                    logger.error(f"执行函数{tool_name}运行时错误，错误捕获：{e}")
                     self.chat_message.append(
                         OpenaiChatMessageModel(
                             role="system",

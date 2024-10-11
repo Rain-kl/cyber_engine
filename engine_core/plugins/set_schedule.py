@@ -1,19 +1,37 @@
-import asyncio
+from datetime import datetime
 
 from loguru import logger
 
+from event_log import elogger, EventLogModel
+from model import TaskModel, InputModel
 from redis_ntr import RedisSqlite
 
 
-async def set_schedule(trigger_time, tasks):
+async def set_schedule(trigger_time: str, tasks: str, *, input_: InputModel):
     logger.info(f"Setting schedule, trigger time: {trigger_time}, tasks: {tasks}")
-
     try:
+        datetime.strptime(trigger_time, "%Y%m%d%H%M")
         redis = RedisSqlite("./data/scheduler.db")
         await redis.connect()
-        await redis.rpush(trigger_time, tasks)
+        await redis.rpush(
+            trigger_time,
+            TaskModel(user_id=input_.user_id, tasks=tasks, origin=input_.msg).__str__(),
+
+        )
+        elogger.log(EventLogModel(
+            user_id=input_.user_id,
+            type="func",
+            level=EventLogModel.LEVEL.INFO,
+            message=f"Set schedule, trigger time: {trigger_time}, tasks: {tasks}"
+        ))
     except Exception as e:
         logger.error(f'error: {e}')
+        elogger.log(EventLogModel(
+            user_id=input_.user_id,
+            type="func",
+            level=EventLogModel.LEVEL.ERROR,
+            message=f"error: {e} | Set schedule, trigger time: {trigger_time}, tasks: {tasks}"
+        ))
         return f'error: {e}'
     return "Schedule set successfully"
 

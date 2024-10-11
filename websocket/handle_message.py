@@ -26,6 +26,6 @@ async def handle_message(data: str, websocket: WebSocket) -> None:
     response_data = ResponseModel(
         user_id=int(input_.user_id),
         msg=str(pond_msg)
-    ).model_dump()
+    )
 
-    await manager.send_private_msg(json.dumps(response_data, ensure_ascii=False), websocket)
+    await manager.send_private_msg(response_data, websocket)
