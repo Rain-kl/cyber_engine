@@ -14,6 +14,7 @@ class Configer(BaseSettings):
     max_chat_message_length: int
 
     email_auth_code: str
+    email_smtp_host: str
     email_sender: str
 
     # 可以从配置文件加载配置

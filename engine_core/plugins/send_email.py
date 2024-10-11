@@ -3,12 +3,12 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from loguru import logger
-from setuptools.command.setopt import config_file
 
 from config import config
 
 sender_email = config.email_sender
 authorization_code = config.email_auth_code
+email_smtp_host = config.email_smtp_host
 
 
 def send_email(subject, body, recipients) -> str:
@@ -22,7 +22,7 @@ def send_email(subject, body, recipients) -> str:
         message.attach(MIMEText(body, "plain"))
 
         # 创建 SMTP_SSL 会话
-        with smtplib.SMTP_SSL("smtp.163.com", 465) as server:
+        with smtplib.SMTP_SSL(email_smtp_host, 465) as server:
             server.login(sender_email, authorization_code)
             text = message.as_string()
             server.sendmail(sender_email, recipients, text)
