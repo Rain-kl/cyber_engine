@@ -82,6 +82,8 @@ class EngineCore:
 
                 tool_name = tool_call.function.name
                 tool_args = json.loads(tool_call.function.arguments)
+                tool_args['user_id'] = self.input_.user_id
+
                 logger.debug(f"tool_name - {tool_name}")
                 logger.debug(f"tool_args - {tool_args}")
                 try:

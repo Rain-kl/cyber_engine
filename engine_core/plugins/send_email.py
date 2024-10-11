@@ -1,9 +1,10 @@
 import smtplib
+import aiosmtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from event_log import EventLogModel, elogger
 from loguru import logger
-
 from config import config
 
 sender_email = config.email_sender
@@ -11,7 +12,7 @@ authorization_code = config.email_auth_code
 email_smtp_host = config.email_smtp_host
 
 
-def send_email(subject, body, recipients) -> str:
+async def send_email(subject, body, recipients, *, user_id) -> str:
     try:
         # 创建 MIMEMultipart 对象
         message = MIMEMultipart()
@@ -22,15 +23,31 @@ def send_email(subject, body, recipients) -> str:
         message.attach(MIMEText(body, "plain"))
 
         # 创建 SMTP_SSL 会话
-        with smtplib.SMTP_SSL(email_smtp_host, 465) as server:
-            server.login(sender_email, authorization_code)
-            text = message.as_string()
-            server.sendmail(sender_email, recipients, text)
+        await aiosmtplib.send(
+            message,
+            hostname=email_smtp_host,
+            port=465,
+            username=sender_email,
+            password=authorization_code,
+            use_tls=True,
+        )
 
         logger.success(f"Sending email to {recipients} with subject: {subject} and body: {body}")
-        return f"Sending email to {recipients} with subject: {subject} and body: {body}"
+        elogger.log(EventLogModel(
+            user_id=user_id,
+            type='func',
+            level=EventLogModel.LEVEL.INFO,
+            message=f"send_email({subject}, {body}, {recipients}) "
+        ))
+        return f"Sending email to {recipients} successfully "
     except Exception as e:
         logger.error(f"Send email error: {e}")
+        elogger.log(EventLogModel(
+            user_id=user_id,
+            type='func',
+            level=EventLogModel.LEVEL.ERROR,
+            message=f"send_email({subject}, {body}, {recipients}) | {e}"
+        ))
         raise e
 
 

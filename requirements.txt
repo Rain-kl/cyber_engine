@@ -8,3 +8,4 @@ aiodiskqueue
 aiosqlite
 pytest
 pytest-asyncio
+aiosmtplib  # for sending emails
