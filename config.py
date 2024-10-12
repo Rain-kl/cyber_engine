@@ -1,3 +1,6 @@
+from typing import Literal, Optional
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -12,6 +15,12 @@ class Configer(BaseSettings):
     llm_model: str
 
     max_chat_message_length: int
+
+    embedding_method: Literal["openai", "ollama", "sentence_transformers"]
+    embedding_model: str
+    embedding_base_url: Optional[str] = None  # 表示可以为None
+    embedding_api_key: Optional[str] = None  # 表示可以为None
+
 
     email_auth_code: str
     email_smtp_host: str

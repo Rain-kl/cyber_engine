@@ -4,8 +4,11 @@ uvicorn
 pydantic_settings
 loguru
 openai
-aiodiskqueue
 aiosqlite
 pytest
 pytest-asyncio
+lancedb
+pandas
+sentence-transformers
+
 aiosmtplib  # for sending emails

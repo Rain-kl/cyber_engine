@@ -1,14 +1,13 @@
 import asyncio
 import inspect
 import json
-import re
 from datetime import datetime
 from typing import List, Dict
 
-import openai.resources
 from loguru import logger
 from openai import AsyncOpenAI
 from openai.resources import AsyncChat as OpenAIAsyncChat
+
 from config import config
 from model import InputModel, OpenaiChatMessageModel
 from redis_ntr import RedisSqlite
@@ -70,14 +69,13 @@ class EngineCore:
         logger.debug("start chat")
 
         async def create_chat_completion():
-            chat_completion = await client.chat.completions.create(
+            return await client.chat.completions.create(
                 model=config.llm_model,
                 temperature=0.7,
                 # response_format={"type": "json_object"},
                 messages=[PromptGeneratorCN().generate_init.model_dump()] + chat_message,
                 tools=tools,
             )
-            return chat_completion
 
         chat_completion = await create_chat_completion()
 
