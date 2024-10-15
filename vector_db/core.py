@@ -1,4 +1,6 @@
 import os
+import time
+from typing import List
 
 import lancedb
 from lancedb.embeddings import OpenAIEmbeddings, SentenceTransformerEmbeddings
@@ -6,6 +8,7 @@ from lancedb.pydantic import LanceModel, Vector
 from lancedb.table import Table
 
 from config import config
+from vector_db.model import SearchResponseModel
 
 if config.embedding_method == 'openai':
     os.environ["OPENAI_API_KEY"] = config.llm_api_key
@@ -25,10 +28,9 @@ class Words(LanceModel):
 
 
 class EmbeddingVectorDB:
-    def __init__(self, _table=None):
+    def __init__(self):
         # noinspection PyTypeChecker
-        self.table: Table = _table
-
+        self.table: Table = None
         pass
 
     def create(self, db_path: str, table_name: str):
@@ -44,7 +46,10 @@ class EmbeddingVectorDB:
         )
         pass
 
-    def search(self, query):
-        actual = self.table.search(query).limit(1).to_pandas()
-        print(actual)
-
+    def search(self, query: str) -> List[SearchResponseModel]:
+        actual = self.table.search(query).limit(5).to_df()
+        print(type(actual))
+        return [SearchResponseModel(
+            text=row['text'],
+            distance=str(row.get('_distance', 0))  # 使用 get 方法提供默认值0
+        ) for index, row in actual.iterrows()]
