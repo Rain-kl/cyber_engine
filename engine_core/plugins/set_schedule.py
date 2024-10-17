@@ -4,7 +4,7 @@ from loguru import logger
 
 from event_log import elogger, EventLogModel
 from model import TaskModel, InputModel
-from redis_ntr import RedisSqlite
+from redis_mq import RedisSqlite
 
 
 async def set_schedule(trigger_time: str, tasks: str, *, input_: InputModel):

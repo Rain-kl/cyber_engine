@@ -1,5 +1,5 @@
 import pytest
-from redis_ntr import RedisSqlite  # 假设你的代码在your_module.py中
+from redis_mq import RedisSqlite  # 假设你的代码在your_module.py中
 
 
 class TestRedisSqlite:

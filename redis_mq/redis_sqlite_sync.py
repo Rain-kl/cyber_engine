@@ -1,6 +1,6 @@
 import sqlite3
 
-from redis_ntr.redis_abs import RedisABC
+from redis_mq.redis_abs import RedisABC
 
 
 class RedisSqliteSync(RedisABC):

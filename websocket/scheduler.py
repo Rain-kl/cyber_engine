@@ -4,7 +4,7 @@ import asyncio
 from venv import logger
 
 from model import TaskModel, InputModel, ResponseModel
-from redis_ntr import RedisSqlite
+from redis_mq import RedisSqlite
 from .connection_manager import manager
 from engine_core import ponder
 

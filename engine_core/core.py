@@ -10,7 +10,7 @@ from openai.resources import AsyncChat as OpenAIAsyncChat
 
 from config import config
 from model import InputModel, OpenaiChatMessageModel
-from redis_ntr import RedisSqlite
+from redis_mq import RedisSqlite
 from .plugins import tools, load_plugins
 from .prompt import PromptGeneratorCN
 from .vdb_api import Mnemonic, KDB
@@ -154,7 +154,7 @@ class EngineCore:
                     )
                 if len(self.chat_message) >= max_chat_message_length:
                     logger.debug("chat_message length >= max_chat_message_length")
-                    await Mnemonic().add(self.chat_message[0]['content'], user_id=self.input_.user_id)
+                    await Mnemonic().add(json.dumps(self.chat_message[0]), user_id=self.input_.user_id)
                     self.chat_message.pop(0)
             await self.redis.set(self.message_history_key, json.dumps(self.chat_message, ensure_ascii=False))
             self.chat_message = []
@@ -169,7 +169,7 @@ class EngineCore:
             )
             if len(self.chat_message) >= max_chat_message_length:
                 logger.debug("chat_message length >= max_chat_message_length")
-                await Mnemonic().add(self.chat_message[0]['content'], user_id=self.input_.user_id)
+                await Mnemonic().add(json.dumps(self.chat_message[0]), user_id=self.input_.user_id)
                 self.chat_message.pop(0)
 
             await self.redis.set(self.message_history_key, json.dumps(self.chat_message, ensure_ascii=False))
