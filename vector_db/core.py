@@ -46,9 +46,8 @@ class EmbeddingVectorDB:
         )
         pass
 
-    def search(self, query: str) -> List[SearchResponseModel]:
-        actual = self.table.search(query).limit(5).to_df()
-        print(type(actual))
+    def search(self, query: str, limit_msg=10) -> List[SearchResponseModel]:
+        actual = self.table.search(query).limit(limit_msg).to_df()
         return [SearchResponseModel(
             text=row['text'],
             distance=str(row.get('_distance', 0))  # 使用 get 方法提供默认值0

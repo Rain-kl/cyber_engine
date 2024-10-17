@@ -1,5 +1,6 @@
 # api/api_mnemonic.py
 import asyncio
+import re
 
 from fastapi import APIRouter
 from loguru import logger
@@ -13,6 +14,8 @@ router = APIRouter()
 
 @router.post("/add", response_model=APIBaseResponseModel)
 async def mn_add(memory: str, user_id: int):
+    memory = memory.replace(" ", "").replace("\n", "")
+
     def run():
         mn_vdb.create('./data/mnVdb', f"user_{user_id}")
         mn_vdb.add(memory)
@@ -24,6 +27,8 @@ async def mn_add(memory: str, user_id: int):
 
 @router.post("/search", response_model=APISearchResponseModel)
 async def mn_search(query: str, user_id: int):
+    query = query.replace(" ", "").replace("\n", "")
+
     def run():
         mn_vdb.create('./data/mnVdb', f"user_{user_id}")
         return mn_vdb.search(query)

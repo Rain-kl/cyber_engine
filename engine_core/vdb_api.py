@@ -1,4 +1,16 @@
 import httpx
+from pydantic import BaseModel
+from typing import List
+
+class SearchResultModel(BaseModel):
+    text: str
+    distance: str
+
+
+class SearchResponseModel(BaseModel):
+    status: int
+    message: str
+    data: List[SearchResultModel]
 
 
 class NetApi:
@@ -23,14 +35,14 @@ class Mnemonic(NetApi):
             response = await client.post(self.endpoint("/mn/add"), params=params)
             return response
 
-    async def search(self, query: str, user_id: int):
+    async def search(self, query: str, user_id: int) -> SearchResponseModel:
         params = {
             "query": query,
             "user_id": user_id
         }
         async with httpx.AsyncClient() as client:
             response = await client.post(self.endpoint("/mn/search"), params=params)
-            return response
+            return SearchResponseModel(**response.json())
 
 
 class KDB(NetApi):

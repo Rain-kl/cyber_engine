@@ -39,8 +39,31 @@ class EngineCore:
         formatted_time = current_time.strftime("%Y %m %d %H %M %S")
         self.input_.msg = f"""
             当前时间{formatted_time}\n
-            用户消息:{self.input_.msg}
+            message:{self.input_.msg}
         """
+
+    @staticmethod
+    async def build_message_LTM(input_model: InputModel) -> OpenaiChatMessageModel:
+        logger.debug("start build_message_LTM")
+
+        mn = Mnemonic()
+        related_history = await mn.search(input_model.msg, user_id=input_model.user_id)
+        assert related_history.status == 200, "Failed to get related history"
+        related_data = []
+        for i in related_history.data:
+            if float(i.distance) < 0.8:
+                related_data.append(i.text)
+        print(f"""
+                这是与上一条消息相关的参考信息，如果与实际消息无任何关系，请忽略\n
+                相关历史:{related_data}\n
+                """)
+        return OpenaiChatMessageModel(
+            role="system",
+            content=f"""
+                这是与上一条消息相关的参考信息，如果与实际消息无任何关系，请忽略\n
+                相关历史:{related_data}\n
+                """
+        )
 
     async def _update_chat_message(self, update_strategy=UpdateStrategy.ALL_UPDATE) -> List[Dict]:
         await self.redis.connect()
@@ -70,11 +93,15 @@ class EngineCore:
         logger.debug("start chat")
 
         async def create_chat_completion():
+            logger.debug("start create_chat_completion")
+            ltm_msg = await self.build_message_LTM(self.input_)
             return await client.chat.completions.create(
                 model=config.llm_model,
                 temperature=0.7,
                 # response_format={"type": "json_object"},
-                messages=[PromptGeneratorCN().generate_init.model_dump()] + chat_message,
+                messages=[PromptGeneratorCN().generate_init.model_dump()]
+                         + chat_message
+                         + [ltm_msg],
                 tools=tools,
             )
 
@@ -126,6 +153,7 @@ class EngineCore:
                         ).model_dump()
                     )
                 if len(self.chat_message) >= max_chat_message_length:
+                    logger.debug("chat_message length >= max_chat_message_length")
                     await Mnemonic().add(self.chat_message[0]['content'], user_id=self.input_.user_id)
                     self.chat_message.pop(0)
             await self.redis.set(self.message_history_key, json.dumps(self.chat_message, ensure_ascii=False))
@@ -140,6 +168,7 @@ class EngineCore:
                 ).model_dump()
             )
             if len(self.chat_message) >= max_chat_message_length:
+                logger.debug("chat_message length >= max_chat_message_length")
                 await Mnemonic().add(self.chat_message[0]['content'], user_id=self.input_.user_id)
                 self.chat_message.pop(0)
 

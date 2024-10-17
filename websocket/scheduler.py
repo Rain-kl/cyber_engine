@@ -23,7 +23,7 @@ async def scheduled_broadcast():
                 input_ = InputModel(
                     role="auxiliary",
                     user_id=task_model.user_id,
-                    msg=f"用户在某个时间点设置的任务: {task_model.origin}，现在已经到了时间点了，请执行相关操作"
+                    msg=f"用户在某个时间点设置的任务: 【{task_model.origin}】，现在已经到了时间点了，请执行相关操作"
                 )
                 pond_msg = await ponder(input_)
                 response_data = ResponseModel(
