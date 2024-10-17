@@ -13,6 +13,7 @@ from model import InputModel, OpenaiChatMessageModel
 from redis_ntr import RedisSqlite
 from .plugins import tools, load_plugins
 from .prompt import PromptGeneratorCN
+from .vdb_api import Mnemonic, KDB
 
 max_chat_message_length = config.max_chat_message_length
 
@@ -125,6 +126,7 @@ class EngineCore:
                         ).model_dump()
                     )
                 if len(self.chat_message) >= max_chat_message_length:
+                    await Mnemonic().add(self.chat_message[0]['content'], user_id=self.input_.user_id)
                     self.chat_message.pop(0)
             await self.redis.set(self.message_history_key, json.dumps(self.chat_message, ensure_ascii=False))
             self.chat_message = []
@@ -138,6 +140,7 @@ class EngineCore:
                 ).model_dump()
             )
             if len(self.chat_message) >= max_chat_message_length:
+                await Mnemonic().add(self.chat_message[0]['content'], user_id=self.input_.user_id)
                 self.chat_message.pop(0)
 
             await self.redis.set(self.message_history_key, json.dumps(self.chat_message, ensure_ascii=False))
