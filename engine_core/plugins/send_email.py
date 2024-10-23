@@ -2,6 +2,8 @@ import aiosmtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from pydantic import EmailStr
+
 from event_log import EventLogModel, elogger
 from loguru import logger
 from config import config
@@ -12,7 +14,15 @@ authorization_code = config.email_auth_code
 email_smtp_host = config.email_smtp_host
 
 
-async def send_email(subject, body, recipients, *, input_: InputModel) -> str:
+async def send_email(
+        subject: str,
+        body: str,
+        recipients: EmailStr,
+        *,
+        input_: InputModel = InputModel(
+            user_id=0,
+            msg="test"
+        )) -> str:
     try:
         # 创建 MIMEMultipart 对象
         message = MIMEMultipart()
