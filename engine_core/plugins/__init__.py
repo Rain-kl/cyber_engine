@@ -4,6 +4,7 @@ import os
 from .send_email import email_tools
 from .set_schedule import schedule_tools
 
+
 def load_plugins():
     plugins_folder = os.path.join(os.path.dirname(__file__), "")
     plugins = {}
@@ -16,6 +17,11 @@ def load_plugins():
                 if callable(getattr(module, attr)) and not attr.startswith("_"):
                     plugins[attr] = getattr(module, attr)
     return plugins
+
+
+def load_plugin(function_name):
+    return load_plugins()[function_name]
+
 
 tools = [
     email_tools,
