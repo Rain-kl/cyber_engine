@@ -2,6 +2,12 @@ import httpx
 from pydantic import BaseModel
 from typing import List
 
+
+class MemoryModel(BaseModel):
+    memory: str
+    user_id: int
+
+
 class SearchResultModel(BaseModel):
     text: str
     distance: str

@@ -13,5 +13,6 @@ pytest-asyncio
 lancedb
 pandas
 sentence-transformers
+sqlalchemy
 
 aiosmtplib  # for sending emails

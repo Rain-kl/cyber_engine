@@ -13,6 +13,7 @@ from model import InputModel, OpenaiChatMessageModel
 from redis_mq import RedisSqlite
 from .plugins import tools, load_plugin
 from .prompt import PromptGeneratorCN
+from .utils import LTM_build_msg
 from .vdb_api import Mnemonic
 
 max_chat_message_length = config.max_chat_message_length
@@ -31,13 +32,23 @@ class EngineCore:
 
     def __init__(self, input_: InputModel):
         self.input_: InputModel = input_
+        self.input_backup = input_
         self.chat_message: ChatMessageList[Dict] = ChatMessageList()
         self.MHK = f"{input_.user_id}_msg"
         self.redis = RedisSqlite("./data/mq.db")
 
-        self._input_processing()
+        self.client = AsyncOpenAI(
+            base_url=config.llm_base_url,
+            api_key=config.llm_api_key,
+        )
 
-    def _input_processing(self):
+        self.__input_processing()
+
+    def __input_processing(self):
+        """
+        对input_进行处理，将时间格式化
+        :return:
+        """
         current_time = datetime.now()
         formatted_time = current_time.strftime("%Y %m %d %H %M %S")
         self.input_.msg = f"""
@@ -45,38 +56,37 @@ class EngineCore:
             msg: {self.input_.msg}
         """
 
-    async def _append_chat_message(self, __obj: OpenaiChatMessageModel) -> Dict:
-        pop_obj = None
+    async def __append_chat_message(self, __obj: OpenaiChatMessageModel):
+        """
+        添加消息到chat_message中，如果长度超过max_chat_message_length，将最早的消息pop出来
+        :param __obj:
+        :return:
+        """
+        pop_obj: Dict | None = None
         if len(self.chat_message) >= max_chat_message_length:
-            logger.debug("chat_message length >= max_chat_message_length")
             pop_obj = self.chat_message.pop(0)
         self.chat_message.append(__obj.model_dump())
         await self.redis.set(self.MHK, self.chat_message.dump_json())
-        return pop_obj
+        if pop_obj:
+            await self.__pop_item_process(OpenaiChatMessageModel(**pop_obj))
 
-    @staticmethod
-    async def _build_message_LTM(input_model: InputModel) -> OpenaiChatMessageModel:
-        logger.debug("start build_message_LTM")
+    async def __pop_item_process(self, item: OpenaiChatMessageModel):
+        """
+        弹出的消息处理, 如果item不为空，将其存入记忆库
+        :param item:
+        :return:
+        """
+        if item:
+            print(type(item))
+            logger.debug(f"pop item: {item}")
+            if item.role == "user" or "assistant":
+                await Mnemonic().add(item.__str__(), user_id=self.input_backup.user_id)
 
-        mn = Mnemonic()
-        related_history = await mn.search(input_model.msg, user_id=input_model.user_id)
-        assert related_history.status == 200, "Failed to get related history"
-        related_data = []
-        for i in related_history.data:
-            if float(i.distance) < 0.8:
-                related_data.append(i.text)
-        print(f"""
-                相关历史:{related_data}\n
-                """)
-        return OpenaiChatMessageModel(
-            role="system",
-            content=f"""
-                这是与上一条消息相关的参考信息，如果与实际消息无任何关系，请忽略\n
-                相关历史:{related_data}\n
-                """
-        )
-
-    async def _update_chat_message(self) -> ChatMessageList[Dict]:
+    async def __update_chat_message(self) -> ChatMessageList[Dict]:
+        """
+        更新chat_message, 从redis中获取历史消息
+        :return:
+        """
         self.chat_message = ChatMessageList()
         await self.redis.connect()
         is_exists = await self.redis.exists(self.MHK)
@@ -87,21 +97,17 @@ class EngineCore:
         return self.chat_message
 
     async def pond(self) -> OpenAIAsyncChat.completions:
-        client = AsyncOpenAI(
-            base_url=config.llm_base_url,
-            api_key=config.llm_api_key,
+        chat_message = await self.__update_chat_message()
+        ocm = OpenaiChatMessageModel(
+            role="user",
+            content=self.input_.msg
         )
-        chat_message = await self._update_chat_message()
-        await self._append_chat_message(
-            OpenaiChatMessageModel(
-                role="user",
-                content=self.input_.msg
-            ))
+        await self.__append_chat_message(ocm)
 
         logger.debug("start chat")
 
-        ltm_msg = await self._build_message_LTM(self.input_)
-        chat_completion = await client.chat.completions.create(
+        ltm_msg = await LTM_build_msg(self.input_)
+        chat_completion = await self.client.chat.completions.create(
             model=config.llm_model,
             temperature=0.7,
             # response_format={"type": "json_object"},
@@ -142,7 +148,7 @@ class EngineCore:
                     else:
                         content = f"函数{tool_name}没有返回结果",
                     logger.debug(f"tool_result: {tool_result}")
-                    pop_item = await self._append_chat_message(
+                    await self.__append_chat_message(
                         OpenaiChatMessageModel(
                             role="system",
                             content=content,
@@ -150,27 +156,21 @@ class EngineCore:
                     )
                 except Exception as e:
                     logger.error(f"执行函数{tool_name}运行时错误，错误捕获：{e}")
-                    pop_item = await self._append_chat_message(
+                    await self.__append_chat_message(
                         OpenaiChatMessageModel(
                             role="system",
                             content=f"执行函数{tool_name}运行时错误，错误捕获：{e},请将错误原因发送给用户"
                         )
                     )
-                if pop_item:
-                    logger.debug("chat_message length >= max_chat_message_length")
-                    await Mnemonic().add(json.dumps(pop_item), user_id=self.input_.user_id)
 
             self.input_ = None
             return await self.pond()
         else:
-            pop_item = await self._append_chat_message(
+            await self.__append_chat_message(
                 OpenaiChatMessageModel(
                     role=chat_completion.choices[0].message.role,
                     content=chat_completion.choices[0].message.content,
                 ))
-            if pop_item:
-                logger.debug("chat_message length >= max_chat_message_length")
-                await Mnemonic().add(json.dumps(pop_item), user_id=self.input_.user_id)
 
             self.input_ = None
             return chat_completion

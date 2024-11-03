@@ -1,5 +1,4 @@
 import json
-from typing import Literal
 
 from pydantic import BaseModel as PydanticBaseModel
 
@@ -24,6 +23,9 @@ class ResponseModel(BaseModel):
 class OpenaiChatMessageModel(BaseModel):
     role: str
     content: str
+
+    def __str__(self):
+        return json.dumps(self.model_dump(), ensure_ascii=False)
 
 
 class TaskModel(BaseModel):
