@@ -1,6 +1,7 @@
+import json
+from typing import Dict
 from loguru import logger
 from openai import AsyncOpenAI
-from openai.types.chat import ChatCompletion
 
 from model import InputModel, OpenaiChatMessageModel
 from .vdb_api import Mnemonic
@@ -28,7 +29,7 @@ async def LTM_build_msg(input_model: InputModel) -> OpenaiChatMessageModel:
     )
 
 
-async def Intention_recognition(client: AsyncOpenAI, model, msg: str) -> ChatCompletion:
+async def Intention_recognition(client: AsyncOpenAI, model, msg: str) -> Dict:
     """
     useless, question, command, other
     :param model:
@@ -48,7 +49,7 @@ async def Intention_recognition(client: AsyncOpenAI, model, msg: str) -> ChatCom
             type: 'useless'
             }
     """
-    return await client.chat.completions.create(
+    type_data = await client.chat.completions.create(
         model=model,
         messages=[
             {
@@ -64,3 +65,4 @@ async def Intention_recognition(client: AsyncOpenAI, model, msg: str) -> ChatCom
         max_tokens=100,
         response_format={"type": "json_object"}
     )
+    return json.loads(type_data.choices[0].message.content)

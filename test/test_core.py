@@ -33,9 +33,7 @@ class TestRedisSqlite:
         model = config.llm_model
         msg = "帮我发一个邮件"
         result = await Intention_recognition(client, model, msg)
-        type_data = json.loads(result.choices[0].message.content)
-        assert type_data["type"] == "command"
+        assert result["type"] == "command"
         msg = "你好，今天过得好吗"
         result = await Intention_recognition(client, model, msg)
-        type_data = json.loads(result.choices[0].message.content)
-        assert type_data["type"] == "useless"
+        assert result["type"] == "useless"

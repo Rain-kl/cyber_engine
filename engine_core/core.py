@@ -6,7 +6,7 @@ from typing import Dict
 
 from loguru import logger
 from openai import AsyncOpenAI
-from openai.resources import AsyncChat as OpenAIAsyncChat
+from openai.types.chat import ChatCompletion
 
 from config import config
 from model import InputModel, OpenaiChatMessageModel
@@ -96,7 +96,7 @@ class EngineCore:
             self.chat_message.extend(msg_history)
         return self.chat_message
 
-    async def pond(self) -> OpenAIAsyncChat.completions:
+    async def pond(self) -> ChatCompletion:
         chat_message = await self.__update_chat_message()
         ocm = OpenaiChatMessageModel(
             role="user",
@@ -119,9 +119,7 @@ class EngineCore:
 
         return await self.chat_completion_process(chat_completion)
 
-    async def chat_completion_process(
-            self, chat_completion: OpenAIAsyncChat.completions
-    ) -> OpenAIAsyncChat.completions:
+    async def chat_completion_process(self, chat_completion: ChatCompletion) -> ChatCompletion:
         """
         处理chat_completion的结果, 并执行工具函数。最后更新进入redis的消息历史，并清空input_
         :param chat_completion:
