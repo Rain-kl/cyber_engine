@@ -1,6 +1,5 @@
 # api/api_mnemonic.py
 import asyncio
-import re
 
 from fastapi import APIRouter
 from loguru import logger
