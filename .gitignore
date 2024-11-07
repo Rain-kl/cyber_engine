@@ -4,3 +4,5 @@
 /test/.env
 /.vscode
 /.idea
+/test/data
+/test/
