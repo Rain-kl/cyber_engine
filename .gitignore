@@ -6,3 +6,6 @@
 /.idea
 /test/data
 /test/
+
+*.pyc
+*.log
