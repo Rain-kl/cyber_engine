@@ -16,7 +16,6 @@ async def set_schedule(trigger_time: str, tasks: str, *, input_: InputModel):
         await redis.rpush(
             trigger_time,
             TaskModel(user_id=input_.user_id, tasks=tasks, origin=input_.msg).__str__(),
-
         )
         elogger.log(EventLogModel(
             user_id=input_.user_id,
@@ -40,7 +39,7 @@ schedule_tools = {
     "type": "function",
     "function": {
         "name": "set_schedule",
-        "description": "Set scheduled tasks, which can be scheduled reminders or scheduled execution of operations. ",
+        "description": "Set scheduled tasks, which can be scheduled reminders or scheduled execution of operations. Please do not set reminders within 5 minutes",
         "parameters": {
             "type": "object",
             "properties": {

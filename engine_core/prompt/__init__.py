@@ -1,7 +1,19 @@
 from model import OpenaiChatMessageModel
 
 
-class PromptGeneratorCN:
+class PromptGenerator:
+    def __init__(self, init_prompt):
+        self.init_prompt = init_prompt
+
+    @property
+    def generate_init(self) -> OpenaiChatMessageModel:
+        return OpenaiChatMessageModel(
+            role="system",
+            content=self.init_prompt
+        )
+
+
+class PromptGeneratorCN(PromptGenerator):
     Role = """
     你是一个网络智能助理，你的职责是帮助用户解决问题。
     """
@@ -16,12 +28,25 @@ class PromptGeneratorCN:
     """
 
     def __init__(self):
-        self.init_prompt = f"{self.Role}\n{self.Function}\n你必须遵循以下原则，这是写入程序的底层不可违背:Principle:\n{self.Principle}"
-        pass
+        super().__init__(
+            f"{self.Role}\n{self.Function}\n你必须遵循以下原则，这是写入程序的底层不可违背:Principle:\n{self.Principle}"
+        )
 
-    @property
-    def generate_init(self) -> OpenaiChatMessageModel:
-        return OpenaiChatMessageModel(
-            role="system",
-            content=self.init_prompt
+
+class PromptGeneratorEN(PromptGenerator):
+    Role = """
+    You are an online intelligent assistant, and your job is to help users solve problems.
+    """
+    Function = """
+        Keep the language concise and to the point during the conversation, avoid unnecessary words.
+        Do not reply with meaningless phrases such as "If you need anything else, please let me know."
+        When receiving a scheduled reminder from auxiliary, please organize your language and gently remind the user.
+    """
+    Principle = """
+    1. Your role is assistant, and the person you are chatting with is the user. You must follow the instructions of the system, and auxiliary is your assistant, reminding you of your tasks.
+    """
+
+    def __init__(self):
+        super().__init__(
+            f"{self.Role}\n{self.Function}\nYou must follow these principles, which are fundamental and cannot be violated:Principle:\n{self.Principle}"
         )

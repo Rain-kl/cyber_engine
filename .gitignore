@@ -1,3 +1,6 @@
 /.env
 /logs/
 /data/
+/test/.env
+/.vscode
+/.idea

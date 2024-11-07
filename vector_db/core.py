@@ -1,5 +1,4 @@
 import os
-import time
 from typing import List
 
 import lancedb
@@ -31,7 +30,6 @@ class EmbeddingVectorDB:
     def __init__(self):
         # noinspection PyTypeChecker
         self.table: Table = None
-        pass
 
     def create(self, db_path: str, table_name: str):
         db = lancedb.connect(db_path)
@@ -41,10 +39,7 @@ class EmbeddingVectorDB:
         return self
 
     def add(self, text: str):
-        self.table.add(
-            [{"text": text}, ]
-        )
-        pass
+        self.table.add([{"text": text}, ])
 
     def search(self, query: str, limit_msg=10) -> List[SearchResponseModel]:
         actual = self.table.search(query).limit(limit_msg).to_df()

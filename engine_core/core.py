@@ -13,7 +13,7 @@ from model import InputModel, OpenaiChatMessageModel
 from redis_mq import RedisSqlite
 from .plugins import tools, load_plugin
 from .prompt import PromptGeneratorCN
-from .utils import LTM_build_msg
+from .utils import ltm_build_msg, intention_recognition
 from .vdb_api import Mnemonic
 
 max_chat_message_length = config.max_chat_message_length
@@ -77,7 +77,6 @@ class EngineCore:
         :return:
         """
         if item:
-            print(type(item))
             logger.debug(f"pop item: {item}")
             if item.role == "user" or "assistant":
                 await Mnemonic().add(item.__str__(), user_id=self.input_backup.user_id)
@@ -85,6 +84,7 @@ class EngineCore:
     async def __update_chat_message(self) -> ChatMessageList[Dict]:
         """
         更新chat_message, 从redis中获取历史消息
+        不会讲本轮消息加入到历史消息中，需要手动使用__append_chat_message来添加
         :return:
         """
         self.chat_message = ChatMessageList()
@@ -98,24 +98,39 @@ class EngineCore:
 
     async def pond(self) -> ChatCompletion:
         chat_message = await self.__update_chat_message()
-        ocm = OpenaiChatMessageModel(
-            role="user",
-            content=self.input_.msg
-        )
-        await self.__append_chat_message(ocm)
+        if self.input_:
+            intention = await intention_recognition(client=self.client, model=config.llm_simple_model,
+                                                    msg=self.input_.msg)
+        else:
+            intention = {"type": "useless"}
+        if intention['type'] == 'useless':
+            logger.debug("useless")
+            chat_completion = await self.client.chat.completions.create(
+                model=config.llm_model,
+                temperature=config.llm_temperature,
+                # response_format={"type": "json_object"},
+                messages=[PromptGeneratorCN().generate_init.model_dump()]
+                         + chat_message,
+            )
+        else:
+            ocm = OpenaiChatMessageModel(
+                role="user",
+                content=self.input_.msg
+            )
+            await self.__append_chat_message(ocm)
 
-        logger.debug("start chat")
+            logger.debug("chat")
 
-        ltm_msg = await LTM_build_msg(self.input_)
-        chat_completion = await self.client.chat.completions.create(
-            model=config.llm_model,
-            temperature=0.7,
-            # response_format={"type": "json_object"},
-            messages=[PromptGeneratorCN().generate_init.model_dump()]
-                     + chat_message
-                     + [ltm_msg],
-            tools=tools,
-        )
+            ltm_msg = await ltm_build_msg(self.input_)
+            chat_completion = await self.client.chat.completions.create(
+                model=config.llm_model,
+                temperature=config.llm_temperature,
+                # response_format={"type": "json_object"},
+                messages=[PromptGeneratorCN().generate_init.model_dump()]
+                         + chat_message
+                         + [ltm_msg],
+                tools=tools,
+            )
 
         return await self.chat_completion_process(chat_completion)
 
@@ -168,7 +183,8 @@ class EngineCore:
                 OpenaiChatMessageModel(
                     role=chat_completion.choices[0].message.role,
                     content=chat_completion.choices[0].message.content,
-                ))
+                )
+            )
 
             self.input_ = None
             return chat_completion

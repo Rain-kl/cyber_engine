@@ -7,7 +7,7 @@ from model import InputModel, OpenaiChatMessageModel
 from .vdb_api import Mnemonic
 
 
-async def LTM_build_msg(input_model: InputModel) -> OpenaiChatMessageModel:
+async def ltm_build_msg(input_model: InputModel) -> OpenaiChatMessageModel:
     logger.debug("start build_message_LTM")
 
     mn = Mnemonic()
@@ -29,13 +29,13 @@ async def LTM_build_msg(input_model: InputModel) -> OpenaiChatMessageModel:
     )
 
 
-async def Intention_recognition(client: AsyncOpenAI, model, msg: str) -> Dict:
+async def intention_recognition(client: AsyncOpenAI, model, msg: str) -> Dict:
     """
     useless, question, command, other
-    :param model:
-    :param client:
-    :param msg:
-    :return:
+    :param model: model name
+    :param client: AsyncOpenAI
+    :param msg: user message
+    :return: {"type": "useless"}
     """
     prompt = """
         You are a problem classifier, and you need to determine which category the user's input belongs to

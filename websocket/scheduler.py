@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 import asyncio
-from venv import logger
+from loguru import logger
 
 from model import TaskModel, InputModel, ResponseModel
 from redis_mq import RedisSqlite

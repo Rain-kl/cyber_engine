@@ -1,6 +1,5 @@
 from typing import Literal, Optional
 
-from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -13,6 +12,8 @@ class Configer(BaseSettings):
     llm_base_url: str
     llm_api_key: str
     llm_model: str
+    llm_simple_model: str
+    llm_temperature: float
 
     max_chat_message_length: int
 

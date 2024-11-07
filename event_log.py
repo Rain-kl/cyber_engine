@@ -15,8 +15,7 @@ class EventLogModel(BaseModel):
     class LEVEL:
         INFO = 0
         WARNING = 1
-        ERROR = 2
-
+        ERROR = 2        
 
 class EventLog:
     def __init__(self, db_path: str):
