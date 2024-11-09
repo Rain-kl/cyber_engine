@@ -105,12 +105,15 @@ class EngineCore:
             intention = {"type": "useless"}
         if intention['type'] == 'useless':
             logger.debug("useless")
+            ocm = OpenaiChatMessageModel(
+                role="user",
+                content=self.input_.msg
+            )
             chat_completion = await self.client.chat.completions.create(
                 model=config.llm_model,
                 temperature=config.llm_temperature,
                 # response_format={"type": "json_object"},
-                messages=[PromptGeneratorCN().generate_init.model_dump()]
-                         + chat_message,
+                messages=[PromptGeneratorCN().generate_init.model_dump()] + [ocm.model_dump()],
             )
         else:
             ocm = OpenaiChatMessageModel(
