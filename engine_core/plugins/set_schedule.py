@@ -15,7 +15,7 @@ async def set_schedule(trigger_time: str, tasks: str, *, input_: InputModel):
         await redis.connect()
         await redis.rpush(
             trigger_time,
-            TaskModel(user_id=input_.user_id, tasks=tasks, origin=input_.msg).__str__(),
+            TaskModel(user_id=input_.user_id, tasks=tasks, origin=input_.msg, chanel=input_.chanel).__str__(),
         )
         elogger.log(EventLogModel(
             user_id=input_.user_id,

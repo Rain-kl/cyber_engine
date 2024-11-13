@@ -11,4 +11,5 @@ if __name__ == "__main__":
         os.makedirs('data')
 
     logger.info(f"starting vdb server on http://localhost:6899")
+    logger.info(f"vdb server api docs on http://localhost:6899/docs")
     uvicorn.run("vector_db:app", port=6899, log_level="info")

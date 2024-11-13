@@ -27,6 +27,11 @@ class NetApi:
         assert path.startswith("/"), "Path must start with /"
         return f"{self.host}{path}"
 
+    async def health(self):
+        async with httpx.AsyncClient() as client:
+            response = await client.get(self.endpoint("/health"))
+            return response
+
 
 class Mnemonic(NetApi):
     def __init__(self):

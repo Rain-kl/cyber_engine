@@ -19,6 +19,8 @@
 
 本项目提出了一种结合检索增强、长记忆和功能调用的多模态大模型应用方法，通过本地医疗知识库和向量检索提升智能护理决策的专业性和效率，并通过功能调用模块灵活应对复杂护理任务需求，同时确保用户隐私与数据安全。
 
+![Preview](https://raw.githubusercontent.com/Rain-kl/cyber_engine/main/docs/images/dietary_recommendations_flow.png)
+
 ## 功能
 1. 支持多种大模型
 2. 支持导入本地知识库
