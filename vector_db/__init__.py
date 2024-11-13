@@ -18,6 +18,10 @@ def create_app() -> FastAPI:
     app.include_router(mnemonic_router, prefix="/mn")
     app.include_router(kb_router, prefix="/kb")
 
+    @app.get("/health")
+    def health():
+        return {"status": "ok"}
+
     return app
 
 
