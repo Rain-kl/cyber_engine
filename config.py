@@ -19,8 +19,8 @@ class Configer(BaseSettings):
 
     embedding_method: Literal["openai", "ollama", "sentence_transformers"]
     embedding_model: str
-    embedding_base_url: Optional[str] = None  # 表示可以为None
-    embedding_api_key: Optional[str] = None  # 表示可以为None
+    embedding_base_url: Optional[str] = None
+    embedding_api_key: Optional[str] = None
 
 
     email_auth_code: str

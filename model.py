@@ -11,13 +11,16 @@ class BaseModel(PydanticBaseModel):
 
 class InputModel(BaseModel):
     role: str = "user"
+    chanel: str = "qq"
     user_id: int  # 用户id
     msg: str  # 消息内容
 
 
 class ResponseModel(BaseModel):
+    code: int = 200
     user_id: int  # 用户id
     msg: str  # 消息内容
+    data: dict = {}
 
 
 class OpenaiChatMessageModel(BaseModel):
@@ -30,5 +33,6 @@ class OpenaiChatMessageModel(BaseModel):
 
 class TaskModel(BaseModel):
     user_id: int
+    channel: str
     tasks: str
     origin: str

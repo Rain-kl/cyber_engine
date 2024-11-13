@@ -23,11 +23,9 @@ class ConnectionManager:
             logger.info(f"Send -> {message}")
             await websocket.send_text(message.__str__())
         else:
-            await websocket.send_text(f"Error: {message}")
+            raise Exception(f"Error: {message} is not a ResponseModel object")
 
-
-
-    async def broadcast(self, message: ResponseModel):
+    async def __broadcast(self, message: ResponseModel):
         for connection in self.active_connections:
             logger.info(f"Broadcast -> {message}")
             await connection.send_text(message.__str__())

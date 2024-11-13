@@ -5,6 +5,7 @@ from loguru import logger
 
 from model import TaskModel, InputModel, ResponseModel
 from redis_mq import RedisSqlite
+from .ws_clients import websocket_list
 from .connection_manager import manager
 from engine_core import ponder
 
@@ -23,6 +24,7 @@ async def scheduled_broadcast():
                 input_ = InputModel(
                     role="auxiliary",
                     user_id=task_model.user_id,
+                    channel=task_model.channel,
                     msg=f"用户在某个时间点设置的任务: 【{task_model.origin}】，现在已经到了时间点了，请执行相关操作"
                 )
                 pond_msg = await ponder(input_)
@@ -30,7 +32,7 @@ async def scheduled_broadcast():
                     user_id=task_model.user_id,
                     msg=str(pond_msg)
                 )
-                await manager.broadcast(response_data)
+                await manager.send_private_msg(response_data, websocket_list[task_model.channel])
 
             await redis.empty(formatted_time)
         await asyncio.sleep(5)

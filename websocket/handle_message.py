@@ -1,31 +1,22 @@
-import json
-
 from fastapi import WebSocket
 
 from engine_core import ponder
-from model import ResponseModel
+from model import ResponseModel, InputModel
 from .connection_manager import manager
-from .ws_utils import ParseWSMessage
 
 
-async def handle_message(data: str, websocket: WebSocket) -> None:
+async def handle_message(input_: InputModel, websocket: WebSocket) -> None:
     """
     Handle incoming message from websocket
-    :param data:
+    :param input_:
     :param websocket:
     :return:
     """
-    try:
-        data = json.loads(data)
-        input_ = ParseWSMessage(data)
-    except (ValueError, TypeError) as e:
-        await manager.send_private_msg(f"Invalid Input: {str(e)}", websocket)
-        return
-
     pond_msg = await ponder(input_)
     response_data = ResponseModel(
         user_id=int(input_.user_id),
-        msg=str(pond_msg)
+        msg=str(pond_msg.choices[0].message.content),
+        data=pond_msg.model_dump()
     )
 
     await manager.send_private_msg(response_data, websocket)

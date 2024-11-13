@@ -3,7 +3,7 @@ from loguru import logger
 from model import InputModel
 
 
-def ParseWSMessage(data: dict) -> InputModel:
+def parse_ws_msg(data: dict) -> InputModel:
     """
     Parse a WebSocket message.
     """
