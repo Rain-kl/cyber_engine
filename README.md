@@ -1,4 +1,4 @@
-# <div align="center">智护知音：基于多模态大模型的智能医护小助手<div>
+# <div align="center">智护精灵：基于多模态大模型的智能医护小助手<div>
 
 ---
 <div align="center">
