@@ -4,7 +4,7 @@ from loguru import logger
 from openai import AsyncOpenAI
 
 from model import InputModel, OpenaiChatMessageModel
-from .vdb_api import Mnemonic
+from vector_db.sdk_vdb import Mnemonic
 
 
 async def ltm_build_msg(input_model: InputModel) -> OpenaiChatMessageModel:
@@ -40,7 +40,7 @@ async def intention_recognition(client: AsyncOpenAI, model, msg: str) -> Dict:
     prompt = """
         You are a problem classifier, and you need to determine which category the user's input belongs to
         Current classification: \n
-            useless: meaningless information, such as greetings related to greeting\n
+            useless: meaningless information, such as greetings or related to greeting\n
             question: Help users solve problems\n
             command: What does the user need you to do, such as providing scheduled reminders\n
             other \n
