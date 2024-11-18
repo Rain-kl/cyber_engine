@@ -23,6 +23,15 @@ async def send_email(
             user_id=0,
             msg="test"
         )) -> str:
+    if not sender_email or not authorization_code or not email_smtp_host:
+        logger.error("Email configuration is not set up")
+        elogger.log(EventLogModel(
+            user_id=input_.user_id,
+            type='func',
+            level=EventLogModel.LEVEL.ERROR,
+            message=f"send_email({subject}, {body}, {recipients}) | Email configuration is not set up"
+        ))
+        return "Email configuration is not set up"
     try:
         # 创建 MIMEMultipart 对象
         message = MIMEMultipart()

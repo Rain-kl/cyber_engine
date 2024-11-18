@@ -35,7 +35,7 @@ class __SqliteORM:
 
 
 class HistoricalMsgDB(__SqliteORM):
-    def __init__(self, db_path="./data/historical.db"):
+    def __init__(self, db_path="./data/history.db"):
         super().__init__(db_path)
         self._create_table(Base)
 

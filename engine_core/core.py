@@ -11,7 +11,7 @@ from openai.types.chat import ChatCompletion
 from config import config
 from model import InputModel, OpenaiChatMessageModel
 from redis_mq import RedisSqlite
-from vector_db.sdk_vdb import Mnemonic
+from rag_core.sdk_vdb import Mnemonic
 from .plugins import tools, load_plugin
 from .prompt import PromptGeneratorCN
 from .utils import ltm_build_msg, intention_recognition

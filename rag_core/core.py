@@ -7,7 +7,7 @@ from lancedb.pydantic import LanceModel, Vector
 from lancedb.table import Table
 
 from config import config
-from vector_db.model import SearchResponseModel
+from rag_core.model import SearchResponseModel
 
 if config.embedding_method == 'openai':
     os.environ["OPENAI_API_KEY"] = config.llm_api_key

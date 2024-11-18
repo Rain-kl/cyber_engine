@@ -4,11 +4,11 @@ from loguru import logger
 from openai import AsyncOpenAI
 
 from model import InputModel, OpenaiChatMessageModel
-from vector_db.sdk_vdb import Mnemonic
+from rag_core.sdk_vdb import Mnemonic
 
 
 async def ltm_build_msg(input_model: InputModel) -> OpenaiChatMessageModel:
-    logger.debug("start build_message_LTM")
+    logger.debug("start ltm_build_message")
 
     mn = Mnemonic()
     related_history = await mn.search(input_model.msg, user_id=input_model.user_id)
@@ -40,10 +40,8 @@ async def intention_recognition(client: AsyncOpenAI, model, msg: str) -> Dict:
     prompt = """
         You are a problem classifier, and you need to determine which category the user's input belongs to
         Current classification: \n
-            useless: meaningless information, such as greetings or related to greeting\n
-            question: Help users solve problems\n
-            command: What does the user need you to do, such as providing scheduled reminders\n
-            other \n
+            useless: meaningless information, such as greetings related to greeting\n
+            other : other types of information，such as questions, commands, etc.\n
         Return the judgment result in JSON format as follows:\n
             {
             type: 'useless'

@@ -2,7 +2,7 @@ import time
 
 import pytest
 
-from vector_db.sdk_vdb import Mnemonic
+from rag_core.sdk_vdb import Mnemonic
 
 
 class TestVDB:
