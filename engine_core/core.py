@@ -9,12 +9,12 @@ from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
 
 from config import config
-from model import InputModel, OpenaiChatMessageModel
+from models import InputModel, OpenaiChatMessageModel
 from redis_mq import RedisSqlite
 from rag_core.sdk_vdb import Mnemonic
 from .plugins import tools, load_plugin
 from .prompt import PromptGeneratorCN
-from .utils import ltm_build_msg, intention_recognition
+from .utils import ltm_build_msg
 
 max_chat_message_length = config.max_chat_message_length
 
@@ -98,42 +98,26 @@ class EngineCore:
 
     async def pond(self) -> ChatCompletion:
         chat_message = await self.__update_chat_message()
+        ltm_msg = None
         if self.input_:
-            intention = await intention_recognition(client=self.client, model=config.llm_simple_model,
-                                                    msg=self.input_.msg)
-        else:
-            intention = {"type": "useless"}
-        if intention['type'] == 'useless':
-            logger.debug("useless")
-            ocm = OpenaiChatMessageModel(
-                role="user",
-                content=self.input_.msg
-            )
-            chat_completion = await self.client.chat.completions.create(
-                model=config.llm_model,
-                temperature=config.llm_temperature,
-                # response_format={"type": "json_object"},
-                messages=[PromptGeneratorCN().generate_init.model_dump()] + [ocm.model_dump()],
-            )
-        else:
             ocm = OpenaiChatMessageModel(
                 role="user",
                 content=self.input_.msg
             )
             await self.__append_chat_message(ocm)
-
-            logger.debug("chat")
-
             ltm_msg = await ltm_build_msg(self.input_)
-            chat_completion = await self.client.chat.completions.create(
-                model=config.llm_model,
-                temperature=config.llm_temperature,
-                # response_format={"type": "json_object"},
-                messages=[PromptGeneratorCN().generate_init.model_dump()]
-                         + chat_message
-                         + [ltm_msg],
-                tools=tools,
-            )
+
+        logger.debug("openai_chat")
+
+        chat_completion = await self.client.chat.completions.create(
+            model=config.llm_model,
+            temperature=config.llm_temperature,
+            # response_format={"type": "json_object"},
+            messages=[PromptGeneratorCN().generate_init.model_dump()]
+                     + chat_message
+                     + [ltm_msg],
+            tools=tools
+        )
 
         return await self.chat_completion_process(chat_completion)
 

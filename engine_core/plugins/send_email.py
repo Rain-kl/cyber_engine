@@ -75,7 +75,8 @@ email_tools = {
     "type": "function",
     "function": {
         "name": "send_email",
-        "description": "Send an email to the specified email with the subject and content",
+        "description": "Send an email to the specified email with the subject and content，"
+                       "Before sending an email, you must be informed of what to send and have the user confirm",
         "parameters": {
             "type": "object",
             "properties": {

@@ -4,49 +4,45 @@ import json
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from loguru import logger
 
-from model import ResponseModel
 from .connection_manager import manager
 from .handle_message import handle_message
-from .scheduler import scheduled_broadcast
-from .ws_utils import parse_ws_msg
+# from .scheduler import scheduled_broadcast
+from .ws_utils import parse_input_msg
 from .ws_clients import websocket_list
 
 app = FastAPI()
 
 
-@app.websocket("/{client_channel}")
-async def websocket_endpoint(websocket: WebSocket, client_channel: str):
+@app.websocket("/{authorization}")
+async def websocket_endpoint(websocket: WebSocket, authorization: str):
+    # TODO: authorization
     await manager.connect(websocket)
-    logger.info(f"Client #{client_channel} joined the chat")
-    websocket_list[client_channel] = websocket
-
+    logger.info(f"User #{authorization} joined the chat")
+    websocket_list[authorization] = websocket
     tasks = []
     try:
-        schedule_task = asyncio.create_task(scheduled_broadcast())
-        tasks.append(schedule_task)
+        # schedule_task = asyncio.create_task(scheduled_broadcast())
+        # tasks.append(schedule_task)
 
         while True:
-            data = await websocket.receive_text()
+            received_text = await websocket.receive_text()
             try:
-                data = json.loads(data)
-                input_ = parse_ws_msg(data)
+                data = json.loads(received_text)
+                completion_request = parse_input_msg(data)
             except (ValueError, TypeError) as e:
-                await manager.send_private_msg(f"Invalid Input: {str(e)}", websocket)
+                await manager.send_private_exception(TypeError("Invalid formate"), websocket)
                 return
 
             logger.info(f"Received <- {data}")
-            if input_.msg.startswith("/"):
-                await manager.send_private_msg(ResponseModel(
-                    user_id=input_.user_id,
-                    msg="Command not supported yet"
-                ), websocket_list[client_channel])
+            if completion_request.messages[0].content.startswith("/"):
+                await manager.send_private_msg("Command not supported yet", websocket_list[authorization])
             else:
-                task = asyncio.create_task(handle_message(input_, websocket))
+                task = asyncio.create_task(handle_message(completion_request, websocket))
                 tasks.append(task)
 
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
-        logger.info(f"Client #{client_channel} left the chat")
+        await manager.disconnect(websocket)
+        logger.info(f"Client #{authorization} left the chat")
     finally:
         if tasks:
             await asyncio.gather(*tasks)
