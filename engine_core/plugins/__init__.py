@@ -5,7 +5,11 @@ from .send_email import email_tools
 from .set_schedule import schedule_tools
 
 
-def load_plugins():
+def load_plugins() -> dict[str, callable]:
+    """
+    加载插件, 返回插件字典
+    :return:
+    """
     plugins_folder = os.path.join(os.path.dirname(__file__), "")
     plugins = {}
     for filename in os.listdir(plugins_folder):
@@ -20,6 +24,11 @@ def load_plugins():
 
 
 def load_plugin(function_name):
+    """
+    加载指定函数
+    :param function_name:
+    :return:
+    """
     return load_plugins()[function_name]
 
 

@@ -8,7 +8,7 @@ class PromptGenerator:
     @property
     def generate_init(self) -> OpenaiChatMessageModel:
         return OpenaiChatMessageModel(
-            role="system",
+            role="sys",
             content=self.init_prompt
         )
 

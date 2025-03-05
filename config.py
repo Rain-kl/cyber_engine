@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings
 
 
 class Configer(BaseSettings):
+    virtual_model: str = "ena-test"
     host: str = "127.0.0.1"
     port: int = 6898
     llm_enable_proxy: bool = False
@@ -13,6 +14,7 @@ class Configer(BaseSettings):
     llm_api_key: str
     llm_model: str = "gpt-4o"
     llm_simple_model: str = "gpt-4o-mini"
+    llm_agent_model: str = "gpt-4o"
     llm_temperature: float = 0.5
 
     max_chat_message_length: int = 10

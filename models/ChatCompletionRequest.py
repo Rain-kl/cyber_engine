@@ -14,11 +14,21 @@ class Message(BaseModel):
     content: str | List[ContentMsg]
 
 
+class ExtraBody(BaseModel):
+    FC_flag: bool = False  # 使用function call
+    RAG_flag: bool = False  # 强制使用RAG
+    MIX_flag: bool = True
+
+
+class ExtraHeaders(BaseModel):
+    authorization: str
+
+
 class ChatCompletionRequest(BaseModel):
-    model: str
-    messages: List[Message]
-    temperature: Optional[float] = 1.0
-    top_p: Optional[float] = 1.0
+    model: str = "ena-test"  # 模型名称
+    messages: List[Message]  # 消息列表
+    temperature: Optional[float] = 1.0  # 温度
+    top_p: Optional[float] = 1.0  # top-p
     n: Optional[int] = 1
     stream: Optional[bool] = False
     stop: Optional[Union[str, List[str]]] = None
@@ -27,4 +37,16 @@ class ChatCompletionRequest(BaseModel):
     frequency_penalty: Optional[float] = 0
     logit_bias: Optional[Dict[str, float]] = None
     user: Optional[str] = None
-    extra_headers: dict | None = None,
+    extra_headers: ExtraHeaders | None = None,
+    extra_body: ExtraBody | None = None
+
+    @property
+    def content(self):
+        """
+        获取消息内容
+        :return:
+        """
+        # assert len(self.messages) == 1, f"Only one message is allowed but got {self.messages}"
+        if len(self.messages) != 1:
+            self.messages = self.messages[-1:]
+        return self.messages[0].content

@@ -45,9 +45,17 @@ class ConnectionManager:
 
     @staticmethod
     async def send_private_stream(chunk: ChatCompletionChunkResponse, websocket: WebSocket):
+        """
+        以流的方式发送消息
+        :param chunk:
+        :param websocket:
+        :return:
+        """
         if not isinstance(chunk, ChatCompletionChunkResponse):
             raise ValueError("Chunk must be a ChatCompletionChunkResponse")
         await websocket.send_text(f"data: {chunk.__str__()}\n\n")
+        if chunk.choices[0].finish_reason == "stop":
+            await websocket.send_text(f"data: [DONE]")
 
     @staticmethod
     async def send_private_exception(exception: Exception, websocket: WebSocket):

@@ -1,23 +1,83 @@
-from fastapi import WebSocket
+import asyncio
+import time
 
-# from engine_core import ponder
+from fastapi import WebSocket
+from config import config
+from engine_core import ponder
 from models import ChatCompletionRequest, ChatCompletionChunkResponse
+from models.openai_chat.chat_completion_chunk import Choice, ChoiceDelta
 from .connection_manager import manager
 
 
-async def handle_message(_input: ChatCompletionRequest, websocket: WebSocket) -> None:
+def generate_id():
+    """
+    chatcmpl-B7I93tP1RlCwjy7CsGKJh07Kt07bg
+    :return:
+    """
+    import uuid
+    return f"chatcmpl-{uuid.uuid4().hex}"
+
+
+def get_system_fingerprint():
+    """
+    fp_b705f0c291
+    :return:
+    """
+    return "fp_b705f0c291"
+
+
+def finish_chunk(_id, created)->ChatCompletionChunkResponse:
+    return ChatCompletionChunkResponse(
+        id=_id,
+        model=config.virtual_model,
+        choices=[
+            Choice(
+                delta=ChoiceDelta(),
+                index=0,
+                logprobs=None,
+                finish_reason="stop"
+            )],
+        created=created,
+        object="chat.completion.chunk",
+        system_fingerprint=get_system_fingerprint()
+    )
+
+
+async def handle_message(chat_completion_request: ChatCompletionRequest, websocket: WebSocket) -> None:
     """
     Handle incoming message from websocket
-    :param _input:
+    :param chat_completion_request:
     :param websocket:
     :return:
     """
-    # TODO: Implement the following
-    # pond_msg = await ponder(_input)
+    init_id = generate_id()
+    init_created = int(time.time())
+    # # TODO: Implement the following
+    # pond_msg = await ponder(chat_completion_request)
     # response_data = ChatCompletionChunkResponse(
-    #     user_id=int(_input.user_id),
+    #     user_id=int(chat_completion_request.user_id),
     #     msg=str(pond_msg.choices[0].message.content),
     #     data=pond_msg.model_dump()
     # )
     response_data = "Hello World"
-    await manager.send_private_msg(response_data, websocket)
+    for i in response_data:
+        await asyncio.sleep(0.3)
+        chunk = ChatCompletionChunkResponse(
+            id=init_id,
+            model=config.virtual_model,
+            choices=[
+                Choice(
+                    delta=ChoiceDelta(
+                        role="assistant",
+                        content=i,
+                    ),
+                    index=0,
+                    logprobs=None,
+                    finish_reason=None
+                )],
+            created=init_created,
+            object="chat.completion.chunk",
+            system_fingerprint=get_system_fingerprint()
+        )
+        await manager.send_private_stream(chunk, websocket)
+    await manager.send_private_stream(finish_chunk(init_id, init_created), websocket)

@@ -2,30 +2,36 @@ import json
 from typing import Dict
 from loguru import logger
 from openai import AsyncOpenAI
+from config import config
 
-from model import InputModel, OpenaiChatMessageModel
 from rag_core.sdk_vdb import Mnemonic
 
 
-async def ltm_build_msg(input_model: InputModel) -> OpenaiChatMessageModel:
-    logger.debug("start ltm_build_message")
+# async def ltm_build_msg(input_model: InputModel) -> OpenaiChatMessageModel:
+#     logger.debug("start ltm_build_message")
+#
+#     mn = Mnemonic()
+#     related_history = await mn.search(input_model.msg, user_id=input_model.user_id)
+#     assert related_history.status == 200, "Failed to get related history"
+#     related_data = []
+#     for i in related_history.data:
+#         if float(i.distance) < 0.8:
+#             related_data.append(i.text)
+#     print(f"""
+#             相关历史:{related_data}\n
+#             """)
+#     return OpenaiChatMessageModel(
+#         role="system",
+#         content=f"""
+#             这是与上一条消息相关的参考信息，如果与实际消息无任何关系，请忽略\n
+#             相关历史:{related_data}\n
+#             """
+#     )
 
-    mn = Mnemonic()
-    related_history = await mn.search(input_model.msg, user_id=input_model.user_id)
-    assert related_history.status == 200, "Failed to get related history"
-    related_data = []
-    for i in related_history.data:
-        if float(i.distance) < 0.8:
-            related_data.append(i.text)
-    print(f"""
-            相关历史:{related_data}\n
-            """)
-    return OpenaiChatMessageModel(
-        role="system",
-        content=f"""
-            这是与上一条消息相关的参考信息，如果与实际消息无任何关系，请忽略\n
-            相关历史:{related_data}\n
-            """
+def get_openai_client()->AsyncOpenAI:
+    return AsyncOpenAI(
+        base_url=config.llm_base_url,
+        api_key=config.llm_api_key,
     )
 
 
