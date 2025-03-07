@@ -5,7 +5,7 @@ from loguru import logger
 
 from models import TaskModel
 from redis_mq import RedisSqlite
-from .ws_clients import websocket_list
+from .client_list import websocket_list
 from .connection_manager import manager
 from engine_core import ponder
 

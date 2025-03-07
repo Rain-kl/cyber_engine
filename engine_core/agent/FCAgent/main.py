@@ -1,5 +1,6 @@
 import json
 import re
+import time
 
 from engine_core.utils import get_openai_client
 from .prompt import fc_agent_prompt
@@ -7,10 +8,11 @@ from config import config
 from debug_tools import get_time_async
 
 
-@get_time_async
+# @get_time_async
 async def instruction_to_function_mapper(
         instruction: str, tools: str, use_prompt=False
 ):
+    """用于不支持function calling的模型，将指令映射到函数"""
     if use_prompt:
         client = get_openai_client()
 
@@ -28,8 +30,9 @@ async def instruction_to_function_mapper(
                 }
             ],
             max_tokens=200,
-            temperature=0.3,
+            temperature=0.1,
         )
+        print(response)
         content = response.choices[0].message.content
         assert content is not None, f"Content is None: {response}"
         if content.startswith("<think>"):

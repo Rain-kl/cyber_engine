@@ -9,7 +9,7 @@ from .connection_manager import manager
 from .handle_message import handle_message
 # from .scheduler import scheduled_broadcast
 from .ws_utils import parse_input_msg
-from .ws_clients import websocket_list
+from .client_list import websocket_list
 
 app = FastAPI()
 

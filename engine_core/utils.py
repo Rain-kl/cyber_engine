@@ -1,11 +1,17 @@
 import json
 from typing import Dict
-from loguru import logger
+
 from openai import AsyncOpenAI
+
 from config import config
 
-from rag_core.sdk_vdb import Mnemonic
 
+def get_system_fingerprint():
+    """
+    fp_b705f0c291
+    :return:
+    """
+    return "fp_b705f0c291"
 
 # async def ltm_build_msg(input_model: InputModel) -> OpenaiChatMessageModel:
 #     logger.debug("start ltm_build_message")
@@ -70,3 +76,4 @@ async def intention_recognition(client: AsyncOpenAI, model, msg: str) -> Dict:
         response_format={"type": "json_object"}
     )
     return json.loads(type_data.choices[0].message.content)
+
