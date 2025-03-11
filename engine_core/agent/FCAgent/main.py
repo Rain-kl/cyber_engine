@@ -1,9 +1,10 @@
 import json
 import re
 import time
+from typing import Any, Coroutine
 
 from engine_core.utils import get_openai_client
-from .prompt import fc_agent_prompt
+from .prompt import fc_agent_prompt_generator
 from config import config
 from debug_tools import get_time_async
 
@@ -11,12 +12,12 @@ from debug_tools import get_time_async
 # @get_time_async
 async def instruction_to_function_mapper(
         instruction: str, tools: str, use_prompt=False
-):
+) -> dict[str, str] | list[dict[str, str]]:
     """用于不支持function calling的模型，将指令映射到函数"""
     if use_prompt:
         client = get_openai_client()
 
-        prompt = fc_agent_prompt.replace("{{tools}}", json.dumps(tools))
+        prompt = fc_agent_prompt_generator(tools)
         response = await client.chat.completions.create(
             model=config.llm_agent_model,
             messages=[
@@ -32,13 +33,13 @@ async def instruction_to_function_mapper(
             max_tokens=200,
             temperature=0.1,
         )
-        print(response)
+        # print(response)
         content = response.choices[0].message.content
         assert content is not None, f"Content is None: {response}"
         if content.startswith("<think>"):
             content = ''.join(re.findall(r"</think>(.*)", content, flags=re.DOTALL)).strip()
 
-        content = '这里是一些说明文字，接着出现一个 JSON 数组：[{"name": "Alice", "age": 25}, {"name": "Bob", "age": 30}]，后面还有其他文字'
+        # content = '这里是一些说明文字，接着出现一个 JSON 数组：[{"name": "Alice", "age": 25}, {"name": "Bob", "age": 30}]，后面还有其他文字'
         content_arr = list(content)
 
         result = None  # 用于存储查找到的 JSON 对象
@@ -63,19 +64,29 @@ async def instruction_to_function_mapper(
                     try:
                         result = json.loads(json_str)
                     except json.JSONDecodeError as e:
-                        print("JSON 解析错误:", e)
+                        # print("JSON 解析错误:", e)
                         break
                 # 找到后退出外层循环
                 if result is not None:
                     break
 
         if result is not None:
-            print("解析到的 JSON 对象为:")
-            print(result)
+            # print("解析到的 JSON 对象为:")
+            return result
         else:
-            print("未能找到有效的 JSON 对象")
-
-
-
+            return {"error": "未找到 JSON 对象"}
     else:
-        pass
+        client = get_openai_client()
+        response = await client.chat.completions.create(
+            model=config.llm_agent_model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": instruction
+                }
+            ],
+            max_tokens=200,
+            temperature=0.1,
+            tools=tools,
+        )
+        raise NotImplemented

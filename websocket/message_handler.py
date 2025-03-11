@@ -1,19 +1,18 @@
-import asyncio
 import time
 
 from fastapi import WebSocket
 from config import config
-from engine_core import ponder
+from engine_core import ponder, ChunkWrapper
 from engine_core.utils import get_system_fingerprint
 from models import ChatCompletionRequest, ChatCompletionChunkResponse
 from models.openai_chat.chat_completion_chunk import Choice, ChoiceDelta
 from .connection_manager import manager
+from engine_core.command import commands  # 导入命令系统
 
 
 def generate_id():
     """
-    chatcmpl-B7I93tP1RlCwjy7CsGKJh07Kt07bg
-    :return:
+    生成对话ID
     """
     import uuid
     return f"chatcmpl-{uuid.uuid4().hex}"
@@ -38,16 +37,27 @@ def finish_chunk(_id, created) -> ChatCompletionChunkResponse:
 
 async def handle_message(chat_completion_request: ChatCompletionRequest, websocket: WebSocket) -> None:
     """
-    Handle incoming message from websocket
-    :param chat_completion_request:
-    :param websocket:
-    :return:
+    处理WebSocket消息
     """
     init_id = generate_id()
     init_created = int(time.time())
-    # TODO: Implement the following
-    for chunk in await ponder(init_id, init_created, chat_completion_request):
-        await manager.send_private_stream(chunk, websocket)
+    chunk_wrapper = ChunkWrapper(init_id, init_created)
+
+    # 特殊指令处理
+    if chat_completion_request.content.startswith("/"):
+        command_path = chat_completion_request.content.split()[0]  # 获取命令路径
+        if command_path in commands:
+            # 执行注册的命令处理函数
+            await commands[command_path](chat_completion_request, websocket, chunk_wrapper)
+        else:
+            # 未知命令
+            for i in f"未知命令: {command_path}, 请使用 /help 获取帮助":
+                await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
+    else:
+        # 非命令消息处理
+        async for chunk in ponder(init_id, init_created, chat_completion_request):
+            await manager.send_private_stream(chunk, websocket)
+
     await manager.send_private_stream(finish_chunk(init_id, init_created), websocket)
 
     # for i in "Hello World":
