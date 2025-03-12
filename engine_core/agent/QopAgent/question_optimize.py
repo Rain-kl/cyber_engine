@@ -1,6 +1,6 @@
 from config import config
 from engine_core.utils import get_openai_client
-from prompt import question_generate_agent_prompt
+from .prompt import question_generate_agent_prompt
 
 async def question_generate(base_question):
     client = get_openai_client()
@@ -16,9 +16,9 @@ async def question_generate(base_question):
                 "content": base_question
             }
         ],
-        max_tokens=200,
+        max_tokens=400,
         temperature=0.1,
     )
-    print(response.choices[0].message['content'])
+    print(response.choices[0].message.content)
 
 
