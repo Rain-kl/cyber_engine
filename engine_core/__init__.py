@@ -25,19 +25,18 @@ async def ponder(_id, _created, chat_completion_request: ChatCompletionRequest) 
     """
     chunk_generator = ChunkWrapper(_id, _created)
 
-    # 始终生成一个初始事件，确保函数至少有一个输出
-    for i in "Event: 开始任务":
-        await asyncio.sleep(0.05)
-        yield chunk_generator.content_chunk_wrapper(i)
-    yield chunk_generator.content_chunk_wrapper("\n")
-    yield chunk_generator.content_chunk_wrapper("\n")
-
     try:
         if (
                 hasattr(chat_completion_request, 'extra_body')
                 and hasattr(chat_completion_request.extra_body, 'FC_flag')
                 and chat_completion_request.extra_body.FC_flag
         ):
+            # 始终生成一个初始事件，确保函数至少有一个输出
+            for i in "Event: 开始任务":
+                await asyncio.sleep(0.05)
+                yield chunk_generator.content_chunk_wrapper(i)
+            yield chunk_generator.content_chunk_wrapper("\n")
+            yield chunk_generator.content_chunk_wrapper("\n")
             #     print("FC_flag 为 True，执行 instruction_to_function_mapper")
             result = await instruction_to_function_mapper(chat_completion_request.content, tools=tools, use_prompt=True)
             task_center.add_task(TaskModel(
