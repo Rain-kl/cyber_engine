@@ -1,9 +1,18 @@
+from collections.abc import Callable
+from typing import Dict, Any, Generator
+import json
+
 import json
 from typing import Dict
 
 from openai import AsyncOpenAI
 
 from config import config
+from models import ChatCompletionChunkResponse
+from models.openai_chat.chat_completion_chunk import Choice, ChoiceDelta, ChatCompletionChunk
+
+
+# from .core import EngineCore
 
 
 def get_system_fingerprint():
@@ -12,6 +21,7 @@ def get_system_fingerprint():
     :return:
     """
     return "fp_b705f0c291"
+
 
 # async def ltm_build_msg(input_model: InputModel) -> OpenaiChatMessageModel:
 #     logger.debug("start ltm_build_message")
@@ -34,7 +44,7 @@ def get_system_fingerprint():
 #             """
 #     )
 
-def get_openai_client()->AsyncOpenAI:
+def get_openai_client() -> AsyncOpenAI:
     return AsyncOpenAI(
         base_url=config.llm_base_url,
         api_key=config.llm_api_key,
@@ -77,3 +87,92 @@ async def intention_recognition(client: AsyncOpenAI, model, msg: str) -> Dict:
     )
     return json.loads(type_data.choices[0].message.content)
 
+
+class ChunkWrapper:
+    def __init__(self, _id, _created):
+        self._id = _id
+        self._created = _created
+
+    def event_chunk_wrapper(self, event_content) -> ChatCompletionChunkResponse:
+        return ChatCompletionChunkResponse(
+            id=self._id,
+            model=config.virtual_model,
+            choices=[
+                Choice(
+                    delta=ChoiceDelta(
+                        role="assistant",
+                        content="Event: " + event_content + "\n",
+                    ),
+                    index=0,
+                    logprobs=None,
+                    finish_reason=None
+                )],
+            created=self._created,
+            object="chat.completion.chunk",
+            system_fingerprint=get_system_fingerprint()
+        )
+
+    def step_chunk_wrapper(self, step_tag, step_content) -> ChatCompletionChunkResponse:
+        return ChatCompletionChunkResponse(
+            id=self._id,
+            model=config.virtual_model,
+            choices=[
+                Choice(
+                    delta=ChoiceDelta(
+                        role="assistant",
+                        content=f"<step>[{step_tag}]{step_content}</step>\n\n\n",
+                    ),
+                    index=0,
+                    logprobs=None,
+                    finish_reason=None
+                )],
+            created=self._created,
+            object="chat.completion.chunk",
+            system_fingerprint=get_system_fingerprint()
+        )
+
+    def step_chunk_wrapper_stream(self, step_tag, step_func: Callable, *args, **kwargs) -> Generator[
+        ChatCompletionChunk, None, None]:
+        yield self.content_chunk_wrapper(f"<step>[{step_tag}]")
+        response: str = step_func(*args, **kwargs)
+        for i in response:
+            yield self.content_chunk_wrapper(i)
+        yield self.content_chunk_wrapper("</step>")
+        yield self.content_chunk_wrapper("\n\n\n")
+
+    def content_chunk_wrapper(self, content, line_break=False) -> ChatCompletionChunkResponse:
+        if line_break:
+            content = content + "\n\n"
+        return ChatCompletionChunkResponse(
+            id=self._id,
+            model=config.virtual_model,
+            choices=[
+                Choice(
+                    delta=ChoiceDelta(
+                        role="assistant",
+                        content=content,
+                    ),
+                    index=0,
+                    logprobs=None,
+                    finish_reason=None
+                )],
+            created=self._created,
+            object="chat.completion.chunk",
+            system_fingerprint=get_system_fingerprint()
+        )
+
+    def finish_chunk(self) -> ChatCompletionChunkResponse:
+        return ChatCompletionChunkResponse(
+            id=self._id,
+            model=config.virtual_model,
+            choices=[
+                Choice(
+                    delta=ChoiceDelta(),
+                    index=0,
+                    logprobs=None,
+                    finish_reason="stop"
+                )],
+            created=self._created,
+            object="chat.completion.chunk",
+            system_fingerprint=get_system_fingerprint()
+        )

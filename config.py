@@ -28,6 +28,10 @@ class Configer(BaseSettings):
     email_smtp_host: Optional[str] = None
     email_sender: Optional[str] = None
 
+    kb_base_url: str
+    kb_api_key: str
+    kb_dataset_id: str
+
     # 可以从配置文件加载配置
     class Config:
         env_file = ".env"

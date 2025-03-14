@@ -1,11 +1,11 @@
-import asyncio
 import json
 
 from kb_sdk.utilities import AsyncSpider
 
 
 class KnowledgeBaseSDK(AsyncSpider):
-    def __init__(self, base_url, api_key):
+    def __init__(self, base_url, api_key, dataset_id):
+        self.dataset_id = dataset_id
         self.headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'
@@ -31,7 +31,6 @@ class KnowledgeBaseSDK(AsyncSpider):
 
     async def search_dataset(
             self,
-            dataset_id,
             text,
             limit="5000",
             similarity="0.3",
@@ -66,7 +65,7 @@ class KnowledgeBaseSDK(AsyncSpider):
             }'
         """
         payload = {
-            "datasetId": dataset_id,
+            "datasetId": self.dataset_id,
             "text": text,
             "limit": limit,
             "similarity": similarity,
@@ -77,20 +76,5 @@ class KnowledgeBaseSDK(AsyncSpider):
             "datasetSearchExtensionBg": ""
         }
         response = await self.post("/core/dataset/searchTest", _json=payload)
-        print(json.dumps(response.json(), indent=4, ensure_ascii=False))
+        # print(json.dumps(response.json(), indent=4, ensure_ascii=False))
         return response.json()
-
-
-async def main():
-    base_url = "http://125.221.90.47:30200/api"
-    key = "fastgpt-rFDLHxfTNyPoSYpsqtSvOsX6IfmCI7BfIghvBE5cfqQheHt4IVje3wCTmix0yF"
-    kb = KnowledgeBaseSDK(base_url, key)
-    await kb.get_dataset_list("")
-    await kb.search_dataset(
-        dataset_id="67bfd0693f7e02bca09d9e1f",
-        text="中医药标准指的是什么"
-    )
-
-
-if __name__ == '__main__':
-    asyncio.run(main())

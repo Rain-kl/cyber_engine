@@ -2,7 +2,7 @@ import time
 
 from fastapi import WebSocket
 from config import config
-from engine_core import ponder, ChunkWrapper
+from engine_core import Ponder, ChunkWrapper
 from engine_core.utils import get_system_fingerprint
 from models import ChatCompletionRequest, ChatCompletionChunkResponse
 from models.openai_chat.chat_completion_chunk import Choice, ChoiceDelta
@@ -55,7 +55,7 @@ async def handle_message(chat_completion_request: ChatCompletionRequest, websock
                 await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
     else:
         # 非命令消息处理
-        async for chunk in ponder(init_id, init_created, chat_completion_request):
+        async for chunk in Ponder(init_id, init_created).run(chat_completion_request):
             await manager.send_private_stream(chunk, websocket)
 
     await manager.send_private_stream(finish_chunk(init_id, init_created), websocket)

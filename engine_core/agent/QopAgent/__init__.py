@@ -1,3 +1,3 @@
-from .question_optimize import question_generate
+from .question_optimize import QopProcess
 
-__all__ = ["question_generate"]
+__all__ = ["QopProcess"]
