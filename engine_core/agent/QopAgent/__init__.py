@@ -1,3 +1,3 @@
-from .question_optimize import QopProcess
+from .qop_agent import QopProcess
 
 __all__ = ["QopProcess"]

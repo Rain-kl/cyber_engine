@@ -50,7 +50,7 @@ class Ponder:
                 qop = QopProcess(self.__chunk_wrapper)
                 async for chunk in qop.run(chat_completion_request.content):
                     yield chunk
-                yield self.__chunk_wrapper.content_chunk_wrapper("执行默认处理流程")
+                yield self.__chunk_wrapper.content_chunk_wrapper("生成完毕")
         except Exception as e:
             # 异常处理，确保错误被捕获并返回
             print(f"ponder 函数执行错误: {e}")
