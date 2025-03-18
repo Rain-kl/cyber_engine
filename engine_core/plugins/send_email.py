@@ -1,11 +1,10 @@
-import aiosmtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+import aiosmtplib
+from loguru import logger
 from pydantic import EmailStr
 
-from event_log import EventLogModel, elogger
-from loguru import logger
 from config import config
 
 sender_email = config.email_sender
@@ -70,8 +69,7 @@ email_tools = {
     "type": "function",
     "function": {
         "name": "send_email",
-        "description": "Send an email to the specified email with the subject and content，"
-                       "Before sending an email, you must be informed of what to send and have the user confirm",
+        "description": "Send an email to the specified email with the subject and content，",
         "parameters": {
             "type": "object",
             "properties": {

@@ -4,13 +4,12 @@ import json
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from loguru import logger
 
-from engine_core import task_center
 from models.ChatCompletionRequest import ExtraHeaders
+from .client_list import websocket_list
 from .connection_manager import manager
 from .message_handler import handle_message
 # from .scheduler import scheduled_broadcast
 from .ws_utils import parse_input_msg
-from .client_list import websocket_list
 
 app = FastAPI()
 

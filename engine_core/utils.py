@@ -1,9 +1,7 @@
+import json
 from collections.abc import Callable
-from typing import Dict, Any, Generator
-import json
-
-import json
 from typing import Dict
+from typing import Generator
 
 from openai import AsyncOpenAI
 
@@ -176,3 +174,44 @@ class ChunkWrapper:
             object="chat.completion.chunk",
             system_fingerprint=get_system_fingerprint()
         )
+
+
+def parse_json_object(content: str) -> Dict:
+    """
+    从字符串中解析 JSON 对象
+    """
+    content_arr = list(content)
+
+    result = None  # 用于存储查找到的 JSON 对象
+    start_index = None  # JSON 对象的起始下标
+    stack = 0  # 用于括号匹配的计数变量
+
+    for index, char in enumerate(content_arr):
+        if char == "[":
+            # 如果当前字符为 [，则作为 JSON 对象的开始
+            start_index = index
+            stack = 1  # 初始化括号计数
+            # 从下一个字符开始继续查找，直到所有的 [ 都匹配到 ]
+        for j in range(index + 1, len(content_arr)):
+            if content_arr[j] == "[":
+                stack += 1
+            elif content_arr[j] == "]":
+                stack -= 1
+            # 当 stack 恰好为 0 时，说明匹配完成
+            if stack == 0:
+                end_index = j  # JSON 对象的结束下标
+                json_str = "".join(content_arr[start_index:end_index + 1])
+                try:
+                    result = json.loads(json_str)
+                except json.JSONDecodeError as e:
+                    # print("JSON 解析错误:", e)
+                    break
+            # 找到后退出外层循环
+            if result is not None:
+                break
+
+    if result is not None:
+        # print("解析到的 JSON 对象为:")
+        return result
+    else:
+        return {"error": "未找到 JSON 对象"}

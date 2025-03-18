@@ -1,181 +1,140 @@
-import asyncio
-import inspect
 import json
-from datetime import datetime
-from typing import Dict
+from typing import AsyncGenerator
 
 from loguru import logger
-from openai import AsyncOpenAI
-from openai.types.chat import ChatCompletion
 
-from config import config
-from models import InputModel, OpenaiChatMessageModel
-from redis_mq import RedisSqlite
-from rag_core.sdk_vdb import Mnemonic
-from .plugins import tools, load_plugin
-from .prompt import PromptGeneratorCN
-from .utils import ltm_build_msg
-
-max_chat_message_length = config.max_chat_message_length
+from models import ChatCompletionRequest, ChatCompletionChunkResponse, TaskModel
+from .agent import QopProcess
+from .agent.FcAgent import instruction_to_function_mapper
+from .agent.RouterAgent import RouterAgent
+from .hmq import connect_hmq
+# from .core import EngineCore
+from .plugins import tools
+from .task_db import task_center
+from .utils import ChunkWrapper
 
 
-class ChatMessageList(list):
-    def __init__(self):
-        super().__init__()
+class Ponder:
+    def __init__(self, _id, _created, chat_completion_request: ChatCompletionRequest):
+        self.__chunk_wrapper = ChunkWrapper(_id=_id, _created=_created)
+        self.router_agent = RouterAgent()
+        self.chat_completion_request = chat_completion_request
+        self.hmq = connect_hmq(chat_completion_request.extra_headers.authorization)
 
-    def dump_json(self):
-        import json
-        return json.dumps(self, ensure_ascii=False)
-
-
-class EngineCore:
-
-    def __init__(self, input_: InputModel):
-        self.input_: InputModel = input_
-        self.input_backup = input_
-        self.chat_message: ChatMessageList[Dict] = ChatMessageList()
-        self.MHK = f"{input_.user_id}_msg"
-        self.redis = RedisSqlite("./data/mq.db")
-
-        self.client = AsyncOpenAI(
-            base_url=config.llm_base_url,
-            api_key=config.llm_api_key,
-        )
-
-        self.__input_processing()
-
-    def __input_processing(self):
+    async def _execute_instruction(self, user_messages: list[dict[str, str]], user_id: str) -> AsyncGenerator[
+        ChatCompletionChunkResponse, None]:
         """
-        对input_进行处理，将时间格式化
-        :return:
+        执行指令处理流程
+
+        Args:
+            user_messages: 用户输入内容, 包含历史记录
+            user_id: 用户ID
+
+        Returns:
+            异步生成器，生成响应块
         """
-        current_time = datetime.now()
-        formatted_time = current_time.strftime("%Y %m %d %H %M %S")
-        self.input_.msg = f"""
-            time: {formatted_time}\n
-            msg: {self.input_.msg}
+        yield self.__chunk_wrapper.content_chunk_wrapper("正在处理您的指令...\n")
+
+        #   使用FcAgent处理指令
+        try:
+            result = await instruction_to_function_mapper(user_messages, tools=tools)
+        except Exception as e:
+            logger.trace(f"执行指令处理时出现错误: {e}")
+            raise e
+
+        if isinstance(result, list):
+            # 将任务添加到任务中心
+            task_center.add_task(TaskModel(
+                user_id=user_id,
+                data=json.dumps(result)
+            ))
+            yield self.__chunk_wrapper.content_chunk_wrapper("是否执行以下任务？\n")
+        yield self.__chunk_wrapper.content_chunk_wrapper(str(result))
+        await self.hmq.add_assistant_message(str(result))
+
+    async def _search_knowledge_base(self, content: str) -> AsyncGenerator[
+        ChatCompletionChunkResponse, None]:
         """
+        执行知识库查询处理流程
 
-    async def __append_chat_message(self, __obj: OpenaiChatMessageModel):
+        Args:
+            content: 用户输入问题
+
+        Returns:
+            异步生成器，生成响应块
         """
-        添加消息到chat_message中，如果长度超过max_chat_message_length，将最早的消息pop出来
-        :param __obj:
-        :return:
+        yield self.__chunk_wrapper.content_chunk_wrapper("正在查询相关信息以回答您的问题...\n")
+
+        # 使用QopAgent处理问题
+        qop = QopProcess(self.__chunk_wrapper)
+        async for chunk in qop.run(content):
+            if chunk.choices[0].delta.content.startswith(">>"):
+                await self.hmq.add_assistant_message(chunk.choices[0].delta.content)
+            yield chunk
+
+        yield self.__chunk_wrapper.content_chunk_wrapper("生成完毕")
+
+    async def _auto_route(self, user_messages: list[dict[str, str]], user_id: str) -> AsyncGenerator[
+        ChatCompletionChunkResponse, None]:
         """
-        pop_obj: Dict | None = None
-        if len(self.chat_message) >= max_chat_message_length:
-            pop_obj = self.chat_message.pop(0)
-        self.chat_message.append(__obj.model_dump())
-        await self.redis.set(self.MHK, self.chat_message.dump_json())
-        if pop_obj:
-            await self.__pop_item_process(OpenaiChatMessageModel(**pop_obj))
+        自动路由用户输入到合适的处理方法
 
-    async def __pop_item_process(self, item: OpenaiChatMessageModel):
+        Args:
+            user_messages: 用户输入内容, 包含历史记录
+            user_id: 用户ID
+
+        Returns:
+            异步生成器，生成响应块
         """
-        弹出的消息处理, 如果item不为空，将其存入记忆库
-        :param item:
-        :return:
-        """
-        if item:
-            logger.debug(f"pop item: {item}")
-            if item.role == "user" or "assistant":
-                await Mnemonic().add(item.__str__(), user_id=self.input_backup.user_id)
+        # 使用路由代理判断用户输入类型
+        input_type, details = await self.router_agent.route(user_messages)
 
-    async def __update_chat_message(self) -> ChatMessageList[Dict]:
-        """
-        更新chat_message, 从redis中获取历史消息
-        不会讲本轮消息加入到历史消息中，需要手动使用__append_chat_message来添加
-        :return:
-        """
-        self.chat_message = ChatMessageList()
-        await self.redis.connect()
-        is_exists = await self.redis.exists(self.MHK)
-        if is_exists:
-            data = await self.redis.get(self.MHK)
-            msg_history = json.loads(data)
-            self.chat_message.extend(msg_history)
-        return self.chat_message
+        # 生成一个初始事件，指示当前处理模式
+        yield self.__chunk_wrapper.content_chunk_wrapper(f"Event: 内容类型 - {input_type}\n")
 
-    async def pond(self) -> ChatCompletion:
-        chat_message = await self.__update_chat_message()
-        ltm_msg = None
-        if self.input_:
-            ocm = OpenaiChatMessageModel(
-                role="user",
-                content=self.input_.msg
-            )
-            await self.__append_chat_message(ocm)
-            ltm_msg = await ltm_build_msg(self.input_)
-
-        logger.debug("openai_chat")
-
-        chat_completion = await self.client.chat.completions.create(
-            model=config.llm_model,
-            temperature=config.llm_temperature,
-            # response_format={"type": "json_object"},
-            messages=[PromptGeneratorCN().generate_init.model_dump()]
-                     + chat_message
-                     + [ltm_msg],
-            tools=tools
-        )
-
-        return await self.chat_completion_process(chat_completion)
-
-    async def chat_completion_process(self, chat_completion: ChatCompletion) -> ChatCompletion:
-        """
-        处理chat_completion的结果, 并执行工具函数。最后更新进入redis的消息历史，并清空input_
-        :param chat_completion:
-        :return:
-        """
-        if chat_completion.choices[0].message.tool_calls:
-            for tool_call in chat_completion.choices[0].message.tool_calls:
-
-                tool_name = tool_call.function.name
-                tool_args = json.loads(tool_call.function.arguments)
-                tool_args['input_'] = self.input_
-
-                logger.debug(f"tool_name - {tool_name}")
-                logger.debug(f"tool_args - {tool_args}")
-                try:
-                    tool = load_plugin(tool_name)
-                    if inspect.iscoroutinefunction(tool):  # 判断是否是异步函数
-                        tool_result = await asyncio.create_task(tool(**tool_args))
-                    else:
-                        tool_result = tool(**tool_args)
-
-                    if tool_result:
-                        content = f"已执行函数{tool_name}, 参数: {tool_args}, 结果: {tool_result}"
-                    else:
-                        content = f"函数{tool_name}没有返回结果",
-                    logger.debug(f"tool_result: {tool_result}")
-                    await self.__append_chat_message(
-                        OpenaiChatMessageModel(
-                            role="system",
-                            content=content,
-                        )
-                    )
-                except Exception as e:
-                    logger.error(f"执行函数{tool_name}运行时错误，错误捕获：{e}")
-                    await self.__append_chat_message(
-                        OpenaiChatMessageModel(
-                            role="system",
-                            content=f"执行函数{tool_name}运行时错误，错误捕获：{e},请将错误原因发送给用户"
-                        )
-                    )
-
-            self.input_ = None
-            return await self.pond()
+        # 根据输入类型选择处理方法
+        if input_type == "question":
+            # 执行知识库查询处理流程
+            async for chunk in self._search_knowledge_base(user_messages[-1]['content']):
+                yield chunk
         else:
-            await self.__append_chat_message(
-                OpenaiChatMessageModel(
-                    role=chat_completion.choices[0].message.role,
-                    content=chat_completion.choices[0].message.content,
-                )
-            )
+            # 执行指令处理流程
+            async for chunk in self._execute_instruction(user_messages, user_id):
+                yield chunk
 
-            self.input_ = None
-            return chat_completion
+    async def run(self) -> AsyncGenerator[
+        ChatCompletionChunkResponse, None]:
+        """
+        核心入口，处理输入，流式输出
 
-    async def organize_memory(self, memory_model: InputModel):
+        Returns:
+            异步生成器，生成响应块
+        """
+        # try:
+        user_id = self.chat_completion_request.extra_headers.authorization
+        content = self.chat_completion_request.content
+        user_messages = await self.hmq.add_user_message(content)
 
-        pass
+        # 检查是否明确指定了FC_flag
+        if (
+                hasattr(self.chat_completion_request, 'extra_body')
+                and hasattr(self.chat_completion_request.extra_body, 'FC_flag')
+                and self.chat_completion_request.extra_body.FC_flag
+        ):
+            # 始终生成一个初始事件，确保函数至少有一个输出
+            for i in "Event: 开始任务":
+                yield self.__chunk_wrapper.content_chunk_wrapper(i)
+            yield self.__chunk_wrapper.content_chunk_wrapper("\n\n")
+
+            # 直接执行指令处理流程
+            async for chunk in self._execute_instruction(user_messages, user_id):
+                yield chunk
+        else:
+            # 执行自动路由流程
+            async for chunk in self._auto_route(user_messages, user_id):
+                yield chunk
+
+        # except Exception as e:
+        #     # 异常处理，确保错误被捕获并返回
+        #     print(f"ponder 函数执行错误: {e}")
+        #     yield self.__chunk_wrapper.event_chunk_wrapper(f"处理过程中出现错误: {str(e)}")
