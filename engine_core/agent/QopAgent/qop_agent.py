@@ -1,9 +1,6 @@
-import asyncio
-from loguru import logger
 from config import config
 from engine_core.utils import get_openai_client, ChunkWrapper
 from kb_sdk import KnowledgeBaseSDK
-from .prompt import question_generate_agent_prompt, answer_question_prompt
 
 
 class QopProcess:
@@ -20,19 +17,18 @@ class QopProcess:
         # 步骤1: 第一个agent直接回答问题(可能产生幻觉)
         yield self.__chunk_wrapper.content_chunk_wrapper("<step>[初始回答生成]")
         yield self.__chunk_wrapper.content_chunk_wrapper("\n")
-        
+
         initial_answer = await self.generate_initial_answer(base_question)
         yield self.__chunk_wrapper.content_chunk_wrapper(f"初始回答: {initial_answer}\n")
         yield self.__chunk_wrapper.content_chunk_wrapper("</step>\n\n\n")
 
-
         # 步骤2: 将回答结果进行知识库检索
         yield self.__chunk_wrapper.content_chunk_wrapper("<step>[知识库检索]")
         yield self.__chunk_wrapper.content_chunk_wrapper("\n")
-        
+
         kb_results = await self.kb.search_dataset(initial_answer)
         relevant_texts = [item["q"] for item in kb_results["data"]["list"]]
-        
+
         yield self.__chunk_wrapper.content_chunk_wrapper("检索到的相关内容:\n")
         for i, text in enumerate(relevant_texts, 1):
             # 只显示内容前100个字符，防止输出过长
@@ -54,10 +50,10 @@ class QopProcess:
             answer, is_sufficient, missing_info = await self.answer_with_evaluation(
                 base_question, relevant_texts
             )
-            
+
             # 增加迭代计数
             iteration_count += 1
-            
+
             if is_sufficient:
                 # 如果知识库内容足够，使用当前答案作为最终答案
                 yield self.__chunk_wrapper.content_chunk_wrapper(f"迭代{iteration_count}结果: 知识库内容足够回答问题\n")
@@ -66,32 +62,33 @@ class QopProcess:
             else:
                 yield self.__chunk_wrapper.content_chunk_wrapper(f"迭代{iteration_count}结果: 知识库内容不足\n")
                 yield self.__chunk_wrapper.content_chunk_wrapper(f"缺失信息: {missing_info}\n\n")
-                
+
                 # 如果达到最大迭代次数，使用当前答案作为最终答案
                 if iteration_count >= max_iterations:
                     yield self.__chunk_wrapper.content_chunk_wrapper("达到最大迭代次数，将基于现有资料总结回答\n")
                     # 获取所有已有的知识库结果进行总结
                     final_answer = await self.summarize_with_limited_info(base_question, relevant_texts)
                     break
-                
+
                 # 否则，使用缺失信息再次查询知识库
                 yield self.__chunk_wrapper.content_chunk_wrapper(f"使用缺失信息重新检索知识库...\n")
                 new_kb_results = await self.kb.search_dataset(missing_info)
                 new_relevant_texts = [item["q"] for item in new_kb_results["data"]["list"]]
-                
+
                 # 合并所有相关文本，避免丢失之前的上下文
                 relevant_texts.extend(new_relevant_texts)
                 # 去重
                 relevant_texts = list(set(relevant_texts))
                 # 限制最多10条文本
                 # relevant_texts = relevant_texts[:10]
-        
+
         # 输出最终答案
         yield self.__chunk_wrapper.content_chunk_wrapper("\n最终答案:\n")
         yield self.__chunk_wrapper.content_chunk_wrapper(final_answer)
         yield self.__chunk_wrapper.content_chunk_wrapper("\n</step>\n\n\n")
 
-    async def generate_initial_answer(self, question):
+    @staticmethod
+    async def generate_initial_answer(question):
         """第一个agent直接回答问题(可能产生幻觉)"""
         client = get_openai_client()
         response = await client.chat.completions.create(
@@ -112,13 +109,14 @@ class QopProcess:
             max_tokens=800,
             temperature=0.7,  # 使用较高的温度让回答更加多样化
         )
-        
+
         return response.choices[0].message.content
 
-    async def answer_with_evaluation(self, question, context):
+    @staticmethod
+    async def answer_with_evaluation(question, context):
         """让agent解答并评估知识库内容是否足够"""
         client = get_openai_client()
-        
+
         response = await client.chat.completions.create(
             model=config.llm_agent_model,
             messages=[
@@ -145,33 +143,34 @@ class QopProcess:
             max_tokens=1000,
             temperature=0.3,
         )
-        
+
         content = response.choices[0].message.content
-        
+
         # 解析回答、评估和缺失信息
         answer = ""
         evaluation = "不足"  # 默认为不足
         missing_info = ""
-        
+
         if "<answer>" in content and "</answer>" in content:
             answer = content.split("<answer>")[1].split("</answer>")[0].strip()
         else:
             answer = content  # 如果没有按格式回答，就使用全部内容
-        
+
         if "<evaluation>" in content and "</evaluation>" in content:
             evaluation = content.split("<evaluation>")[1].split("</evaluation>")[0].strip()
-        
+
         if "<missing_info>" in content and "</missing_info>" in content:
             missing_info = content.split("<missing_info>")[1].split("</missing_info>")[0].strip()
-        
+
         is_sufficient = "足够" in evaluation
-        
+
         return answer, is_sufficient, missing_info
 
-    async def summarize_with_limited_info(self, question, context):
+    @staticmethod
+    async def summarize_with_limited_info(question, context):
         """当达到最大迭代次数后，基于有限信息总结回答"""
         client = get_openai_client()
-        
+
         response = await client.chat.completions.create(
             model=config.llm_agent_model,
             messages=[
@@ -193,7 +192,7 @@ class QopProcess:
             max_tokens=1000,
             temperature=0.3,
         )
-        
+
         return response.choices[0].message.content
 
     # 保留原有方法以便向后兼容
@@ -205,7 +204,25 @@ class QopProcess:
             messages=[
                 {
                     "role": "user",
-                    "content": question_generate_agent_prompt(base_question, context)
+                    "content": f"""
+                       你将获得一篇长文章的其中部分片段。请仔细阅读这些片段。阅读完成后，你将根据文章的内容执行特定任务。
+                        现在，文章开始：
+                        - **文章内容：** 
+                        {context}
+                        文章到此结束。
+                        
+                        接下来，请按照给出的指示完成任务。
+                        任务 1：
+                            你会得到一个与文章相关的问题。为了有效地回答这个问题，你需要回想文章中的具体细节。你的任务是生成精确的线索问题，帮助找到文章中必要的信息。
+                            
+                            ### 问题：{base_question}
+                            ### 指示：
+                                1. 你对文章有一个大致的理解。你的任务是生成一个或多个具体的线索，帮助查找文章中的支持证据。
+                                2. 线索应以精确的替代问题形式呈现，澄清原问题。
+                                3. 只输出线索。如果有多个线索，请用换行符分隔。不要包含额外信息。
+                                4. 请用中文回答。
+                                5. 如果文章片段不足以回答问题，请回答“无法回答”。
+                    """
                 }
             ],
             max_tokens=400,
@@ -249,7 +266,21 @@ class QopProcess:
             messages=[
                 {
                     "role": "user",
-                    "content": answer_question_prompt(question, context)
+                    "content": f"""
+                       你将获得一篇长文章。请仔细阅读这篇文章。阅读完成后，你将根据文章的内容执行特定任务。
+                        现在，文章开始：
+                        - **文章内容：** 
+                        {context}
+                        文章到此结束。
+                
+                        接下来，请按照给出的指示完成任务。
+                        任务 1：
+                            你会得到一个与文章相关的问题。你的任务是直接回答这个问题。
+                                
+                                ### 问题：{question}
+                                ### 指示：
+                                基于文章的内容，直接回答问题。不要包含除答案之外的任何额外内容。
+                    """
                 }
             ],
             max_tokens=400,
