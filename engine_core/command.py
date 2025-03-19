@@ -7,6 +7,7 @@ from fastapi import WebSocket
 from loguru import logger
 
 from engine_core.hmq import connect_hmq
+from engine_core.hmdb import connect_hmdb
 from engine_core.task_db import task_center
 from engine_core.plugins import load_plugin
 from models import ChatCompletionRequest
@@ -89,8 +90,16 @@ async def help_command(chat_completion_request: ChatCompletionRequest, websocket
 async def clear_chat_history(chat_completion_request: ChatCompletionRequest, websocket: WebSocket, chunk_wrapper):
     """清空聊天记录"""
     try:
-        hmq = connect_hmq(chat_completion_request.extra_headers.authorization)
-        await hmq.delete(chat_completion_request.extra_headers.authorization)
+        user_id = chat_completion_request.extra_headers.authorization
+        # 清空HMQ中的消息
+        hmq = connect_hmq(user_id)
+        await hmq.delete(user_id)
+        
+        # 清空HMDB中的历史消息（仅当前用户）
+        hmdb = connect_hmdb(user_id)
+        await hmdb.connect()
+        await hmdb.delete_messages(user_id=user_id)
+        
         for i in f"聊天记录已清空":
             await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
     except Exception as e:
@@ -109,5 +118,52 @@ async def get_history(chat_completion_request: ChatCompletionRequest, websocket:
             await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
     except Exception as e:
         logger.error(f"获取聊天记录时出现错误: {e}")
+        for i in f"error: {e}":
+            await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
+
+
+@command("/get-all-history")
+async def get_all_history(chat_completion_request: ChatCompletionRequest, websocket: WebSocket, chunk_wrapper):
+    """获取包括存档在内的所有聊天记录"""
+    try:
+        # 从HMQ获取当前对话
+        hmq = connect_hmq(chat_completion_request.extra_headers.authorization)
+        current_history = await hmq.get(chat_completion_request.extra_headers.authorization)
+        
+        # 从HMDB获取存档历史记录（仅当前用户）
+        user_archived_history = await hmq.get_history_from_db(limit=100)
+        
+        # 发送当前对话记录
+        for i in f"当前对话: {current_history}":
+            await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
+        
+        # 发送当前用户的存档历史记录
+        await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper("\n\n当前用户存档记录:\n"), websocket)
+        for i, message in enumerate(user_archived_history):
+            msg = f"{i+1}. [{message['timestamp']}] {message['role']}: {message['content']}\n"
+            await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(msg), websocket)
+            
+    except Exception as e:
+        logger.error(f"获取所有聊天记录时出现错误: {e}")
+        for i in f"error: {e}":
+            await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
+
+
+@command("/get-all-users-history")
+async def get_all_users_history(chat_completion_request: ChatCompletionRequest, websocket: WebSocket, chunk_wrapper):
+    """获取所有用户的聊天记录"""
+    try:
+        # 从HMDB获取所有用户的存档历史记录
+        hmq = connect_hmq(chat_completion_request.extra_headers.authorization)
+        all_users_history = await hmq.get_all_users_history(limit=100)
+        
+        # 发送所有用户的历史记录
+        await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper("所有用户的历史记录:\n"), websocket)
+        for i, message in enumerate(all_users_history):
+            msg = f"{i+1}. 用户: {message['user_id']} - [{message['timestamp']}] {message['role']}: {message['content']}\n"
+            await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(msg), websocket)
+            
+    except Exception as e:
+        logger.error(f"获取所有用户聊天记录时出现错误: {e}")
         for i in f"error: {e}":
             await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)

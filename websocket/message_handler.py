@@ -5,6 +5,7 @@ from config import config
 from engine_core import Ponder
 from engine_core.utils import get_system_fingerprint, ChunkWrapper
 from models import ChatCompletionRequest, ChatCompletionChunkResponse
+from models.ChatCompletionRequest import ExtraBody
 from models.openai_chat.chat_completion_chunk import Choice, ChoiceDelta
 from .connection_manager import manager
 from engine_core.command import commands  # 导入命令系统
@@ -55,6 +56,7 @@ async def handle_message(chat_completion_request: ChatCompletionRequest, websock
                 await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
     else:
         # 非命令消息处理
+        # chat_completion_request.extra_body = ExtraBody(FC_flag=True)
         async for chunk in Ponder(init_id, init_created, chat_completion_request).run():
             await manager.send_private_stream(chunk, websocket)
 

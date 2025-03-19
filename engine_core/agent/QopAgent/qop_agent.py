@@ -63,10 +63,10 @@ class QopProcess:
 
             while iteration_count < max_iterations:
                 # 让agent解答并判断知识库内容是否足够
-                yield self.__chunk_wrapper.content_chunk_wrapper(f"迭代{iteration_count+1}中...\n")
-                awe_content=""
+                yield self.__chunk_wrapper.content_chunk_wrapper(f"迭代{iteration_count + 1}中...\n")
+                awe_content = ""
                 try:
-                    async for i in self.answer_with_evaluation(base_question,relevant_texts):
+                    async for i in self.answer_with_evaluation(base_question, relevant_texts):
                         awe_content += i
                         yield self.__chunk_wrapper.content_chunk_wrapper(i)
                     yield self.__chunk_wrapper.content_chunk_wrapper("\n\n")
@@ -109,7 +109,8 @@ class QopProcess:
 
                 if is_sufficient:
                     # 如果知识库内容足够，使用当前答案作为最终答案
-                    yield self.__chunk_wrapper.content_chunk_wrapper(f"迭代{iteration_count}结果: 知识库内容足够回答问题\n")
+                    yield self.__chunk_wrapper.content_chunk_wrapper(
+                        f"迭代{iteration_count}结果: 知识库内容足够回答问题\n")
                     final_answer = answer
                     break
                 else:
@@ -117,11 +118,11 @@ class QopProcess:
                     yield self.__chunk_wrapper.content_chunk_wrapper(f"缺失信息: {missing_info}\n\n")
 
                     # 如果达到最大迭代次数，使用当前答案作为最终答案
-                    if iteration_count >= max_iterations:
+                    if iteration_count > max_iterations:
                         yield self.__chunk_wrapper.content_chunk_wrapper("达到最大迭代次数，将基于现有资料总结回答\n")
                         # 获取所有已有的知识库结果进行总结
                         yield self.__chunk_wrapper.content_chunk_wrapper("生成最终答案中...\n")
-                        
+
                         # 流式输出最终答案
                         try:
                             async for chunk in self.summarize_with_limited_info(base_question, relevant_texts):
@@ -154,7 +155,7 @@ class QopProcess:
                         yield self.__chunk_wrapper.content_chunk_wrapper(f"\n[重新检索错误: {str(e)}]\n")
 
             # 输出最终答案(如果不是通过流式方式生成的)
-            if iteration_count < max_iterations:
+            if iteration_count <= max_iterations:
                 yield self.__chunk_wrapper.content_chunk_wrapper("\n最终答案:\n")
                 yield self.__chunk_wrapper.content_chunk_wrapper(f">>\n{final_answer}")
             yield self.__chunk_wrapper.content_chunk_wrapper("\n</step>\n\n\n")
@@ -239,7 +240,6 @@ class QopProcess:
             traceback.print_exc()
             yield f"[评估回答发生错误: {str(e)}]"
 
-
     @staticmethod
     async def summarize_with_limited_info(question, context):
         """当达到最大迭代次数后，基于有限信息总结回答"""
@@ -276,4 +276,3 @@ class QopProcess:
             import traceback
             traceback.print_exc()
             yield f"[总结答案发生错误: {str(e)}]"
-

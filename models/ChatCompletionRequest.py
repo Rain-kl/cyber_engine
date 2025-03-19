@@ -41,7 +41,7 @@ class ChatCompletionRequest(BaseModel):
     extra_body: ExtraBody | None = None
 
     @property
-    def content(self):
+    def content(self) -> str:
         """
         获取消息内容
         :return:
@@ -49,4 +49,10 @@ class ChatCompletionRequest(BaseModel):
         # assert len(self.messages) == 1, f"Only one message is allowed but got {self.messages}"
         if len(self.messages) != 1:
             self.messages = self.messages[-1:]
-        return self.messages[0].content
+        if isinstance(self.messages[0].content, str):
+            return self.messages[0].content
+        elif isinstance(self.messages[0].content, list):
+            for m in self.messages[0].content:
+                if m.type == "text":
+                    return m.text
+        return ""

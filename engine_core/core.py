@@ -121,6 +121,7 @@ class Ponder:
                 and hasattr(self.chat_completion_request.extra_body, 'FC_flag')
                 and self.chat_completion_request.extra_body.FC_flag
         ):
+            logger.debug("enable FC_flag")
             # 始终生成一个初始事件，确保函数至少有一个输出
             for i in "Event: 开始任务":
                 yield self.__chunk_wrapper.content_chunk_wrapper(i)
