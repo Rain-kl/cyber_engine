@@ -1,6 +1,6 @@
 import random
 
-from vector_db import EmbeddingVectorDB
+from rag_core import EmbeddingVectorDB
 from tqdm import tqdm
 
 

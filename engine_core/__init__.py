@@ -1,10 +1,3 @@
-from openai.types.chat import ChatCompletion
+from .core import Ponder
 
-from model import InputModel
-from .core import EngineCore
-
-
-async def ponder(input_: InputModel) -> ChatCompletion:
-    engine = EngineCore(input_)
-    chat_completion = await engine.pond()
-    return chat_completion
+__all__ = ['Ponder']

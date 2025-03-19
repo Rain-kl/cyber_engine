@@ -11,5 +11,5 @@ if __name__ == "__main__":
     if not os.path.exists('data'):
         os.makedirs('data')
 
-    logger.info(f"websocket server running on ws://{config.host}:{config.port}")
+    logger.info(f"loading... server will running on ws://{config.host}:{config.port}")
     uvicorn.run("websocket:app", host=config.host, port=config.port, log_level="info")

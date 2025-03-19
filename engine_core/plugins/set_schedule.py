@@ -1,37 +1,37 @@
-from datetime import datetime
+# from datetime import datetime
+#
+# from loguru import logger
+#
+# from event_log import elogger, EventLogModel
+# from models import TaskModel
+# from redis_mq import RedisSqlite
 
-from loguru import logger
 
-from event_log import elogger, EventLogModel
-from model import TaskModel, InputModel
-from redis_mq import RedisSqlite
-
-
-async def set_schedule(trigger_time: str, tasks: str, *, input_: InputModel):
-    logger.info(f"Setting schedule, trigger time: {trigger_time}, tasks: {tasks}")
-    try:
-        datetime.strptime(trigger_time, "%Y%m%d%H%M")
-        redis = RedisSqlite("./data/scheduler.db")
-        await redis.connect()
-        await redis.rpush(
-            trigger_time,
-            TaskModel(user_id=input_.user_id, tasks=tasks, origin=input_.msg, chanel=input_.chanel).__str__(),
-        )
-        elogger.log(EventLogModel(
-            user_id=input_.user_id,
-            type="func",
-            level=EventLogModel.LEVEL.INFO,
-            message=f"Set schedule, trigger time: {trigger_time}, tasks: {tasks}"
-        ))
-    except Exception as e:
-        logger.error(f'error: {e}')
-        elogger.log(EventLogModel(
-            user_id=input_.user_id,
-            type="func",
-            level=EventLogModel.LEVEL.ERROR,
-            message=f"error: {e} | Set schedule, trigger time: {trigger_time}, tasks: {tasks}"
-        ))
-        return f'error: {e}'
+async def set_schedule(trigger_time: str, tasks: str):
+    # logger.info(f"Setting schedule, trigger time: {trigger_time}, tasks: {tasks}")
+    # try:
+    #     datetime.strptime(trigger_time, "%Y%m%d%H%M")
+    #     redis = RedisSqlite("./data/scheduler.db")
+    #     await redis.connect()
+    #     await redis.rpush(
+    #         trigger_time,
+    #         TaskModel(user_id=input_.user_id, tasks=tasks, origin=input_.msg, channel="t").__str__(),
+    #     )
+    #     elogger.log(EventLogModel(
+    #         user_id=input_.user_id,
+    #         type="func",
+    #         level=EventLogModel.LEVEL.INFO,
+    #         message=f"Set schedule, trigger time: {trigger_time}, tasks: {tasks}"
+    #     ))
+    # except Exception as e:
+    #     logger.error(f'error: {e}')
+    #     elogger.log(EventLogModel(
+    #         user_id=input_.user_id,
+    #         type="func",
+    #         level=EventLogModel.LEVEL.ERROR,
+    #         message=f"error: {e} | Set schedule, trigger time: {trigger_time}, tasks: {tasks}"
+    #     ))
+    #     return f'error: {e}'
     return "Schedule set successfully"
 
 

@@ -1,5 +1,7 @@
-import aiosqlite
+import json
 
+import aiosqlite
+import sqlite3
 from .redis_abs import RedisABC
 
 
@@ -12,18 +14,19 @@ class RedisSqlite(RedisABC):
     ):
         super().__init__(db_path=db_path, db=db, password=password)
 
-    async def connect(self):
-        async with aiosqlite.connect(self.db_path) as db:
+    def connect(self):
+        with sqlite3.connect(self.db_path) as db:
             # 创建键值表
-            await db.execute('''CREATE TABLE IF NOT EXISTS kv (
+            db.execute('''CREATE TABLE IF NOT EXISTS kv (
                             key TEXT PRIMARY KEY, value TEXT
                         )''')
             # 创建列表表
-            await db.execute('''CREATE TABLE IF NOT EXISTS list (
+            db.execute('''CREATE TABLE IF NOT EXISTS list (
                             key TEXT, value TEXT, position INTEGER,
                             PRIMARY KEY (key, position)
                         )''')
-            await db.commit()
+            db.commit()
+        return self
 
     async def close(self):
         pass
@@ -45,7 +48,9 @@ class RedisSqlite(RedisABC):
                 result = await cursor.fetchone()
                 return result
 
-    async def set(self, key: str, value: str):
+    async def set(self, key: str, value: str | list | dict):
+        if isinstance(value, dict) or isinstance(value, list):
+            value = json.dumps(value, ensure_ascii=False)
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute('INSERT OR REPLACE INTO kv (key, value) VALUES (?, ?)', (key, value))
             await db.commit()
@@ -56,9 +61,15 @@ class RedisSqlite(RedisABC):
                 row = await cursor.fetchone()
                 if row:
                     if len(row) == 1:
-                        return row[0]
+                        try:
+                            return json.loads(row[0])
+                        except json.JSONDecodeError:
+                            return row[0]
                     else:
-                        return list(row)
+                        try:
+                            return [json.loads(i) for i in row]
+                        except json.JSONDecodeError:
+                            return list(row)
                 return None
 
     async def lpush(self, key, value):
