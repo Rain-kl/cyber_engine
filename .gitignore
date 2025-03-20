@@ -7,6 +7,9 @@
 /test/data
 /test/
 
+*/demo/
+*demo.py
+
 *.pyc
 *.log
 /*/.env
