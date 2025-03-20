@@ -110,32 +110,47 @@ class Ponder:
         Returns:
             异步生成器，生成响应块
         """
-        # try:
-        user_id = self.chat_completion_request.extra_headers.authorization
-        content = self.chat_completion_request.content
-        user_messages = await self.hmq.add_user_message(content)
+        try:
+            user_id = self.chat_completion_request.extra_headers.authorization
+            content = self.chat_completion_request.content
+            user_messages = await self.hmq.add_user_message(content)
 
-        # 检查是否明确指定了FC_flag
-        if (
-                hasattr(self.chat_completion_request, 'extra_body')
-                and hasattr(self.chat_completion_request.extra_body, 'FC_flag')
-                and self.chat_completion_request.extra_body.FC_flag
-        ):
-            logger.debug("enable FC_flag")
-            # 始终生成一个初始事件，确保函数至少有一个输出
-            for i in "Event: 开始任务":
-                yield self.__chunk_wrapper.content_chunk_wrapper(i)
-            yield self.__chunk_wrapper.content_chunk_wrapper("\n\n")
+            # 检查是否明确指定了FC_flag
+            if (
+                    hasattr(self.chat_completion_request, 'extra_body')
+                    and hasattr(self.chat_completion_request.extra_body, 'FC_flag')
+                    and self.chat_completion_request.extra_body.FC_flag
+            ):
+                logger.debug("enable FC_flag")
+                # 始终生成一个初始事件，确保函数至少有一个输出
+                for i in "Event: 开始任务":
+                    yield self.__chunk_wrapper.content_chunk_wrapper(i)
+                yield self.__chunk_wrapper.content_chunk_wrapper("\n\n")
 
-            # 直接执行指令处理流程
-            async for chunk in self._execute_instruction(user_messages, user_id):
-                yield chunk
-        else:
-            # 执行自动路由流程
-            async for chunk in self._auto_route(user_messages, user_id):
-                yield chunk
+                # 直接执行指令处理流程
+                async for chunk in self._execute_instruction(user_messages, user_id):
+                    yield chunk
+            elif (
+                    hasattr(self.chat_completion_request, 'extra_body')
+                    and hasattr(self.chat_completion_request.extra_body, 'RAG_flag')
+                    and self.chat_completion_request.extra_body.RAG_flag
+            ):
+                logger.debug("enable RAG_flag")
+                # 始终生成一个初始事件，确保函数至少有一个输出
+                for i in "Event: 开始检索":
+                    yield self.__chunk_wrapper.content_chunk_wrapper(i)
+                yield self.__chunk_wrapper.content_chunk_wrapper("\n\n")
 
-        # except Exception as e:
-        #     # 异常处理，确保错误被捕获并返回
-        #     print(f"ponder 函数执行错误: {e}")
-        #     yield self.__chunk_wrapper.event_chunk_wrapper(f"处理过程中出现错误: {str(e)}")
+                # 直接执行指令处理流程
+                async for chunk in self._search_knowledge_base(content):
+                    yield chunk
+            else:
+                # 执行自动路由流程
+                async for chunk in self._auto_route(user_messages, user_id):
+                    yield chunk
+
+        except Exception as e:
+            # 异常处理，确保错误被捕获并返回
+            logger.error(f"处理过程中出现错误: {str(e)}")
+            logger.trace(e)
+            yield self.__chunk_wrapper.event_chunk_wrapper(f"处理过程中出现错误: {str(e)}")

@@ -6,7 +6,7 @@ class HMQueue(RedisSqlite):
     def __init__(self, user_id):
         super().__init__("./data/hmq.db")
         self.user_id = user_id
-        self.max_context_length = 4  # 设置最大上下文长度为16
+        self.max_context_length = 16  # 设置最大上下文长度为16
         self.hmdb = HMDB(user_id)  # 初始化HMDB实例
 
     async def get_message(self) -> list:
@@ -29,6 +29,9 @@ class HMQueue(RedisSqlite):
         })
 
         # 如果消息超过最大上下文长度，将旧消息存入数据库
+        return await self.put2db(messages)
+
+    async def put2db(self, messages):
         if len(messages) > self.max_context_length:
             # 计算要存入数据库的消息数量
             overflow_count = len(messages) - self.max_context_length
@@ -36,7 +39,6 @@ class HMQueue(RedisSqlite):
             await self.store_messages_to_db(messages[:overflow_count])
             # 保留最近的max_context_length条消息
             messages = messages[-self.max_context_length:]
-
         await self.set(self.user_id, messages)
         return messages
 
@@ -48,17 +50,8 @@ class HMQueue(RedisSqlite):
         })
 
         # 如果消息超过最大上下文长度，将旧消息存入数据库
-        if len(messages) > self.max_context_length:
-            # 计算要存入数据库的消息数量
-            overflow_count = len(messages) - self.max_context_length
-            # 将前overflow_count条消息存入数据库
-            await self.store_messages_to_db(messages[:overflow_count])
-            # 保留最近的max_context_length条消息
-            messages = messages[-self.max_context_length:]
+        return await self.put2db(messages)
 
-        await self.set(self.user_id, messages)
-        return messages
-    
     async def store_messages_to_db(self, messages):
         """将消息存储到HMDB数据库中"""
         hmdb_instance = await self.hmdb.connect()
@@ -67,16 +60,16 @@ class HMQueue(RedisSqlite):
                 role=message["role"],
                 content=message["content"]
             )
-    
+
     async def get_history_from_db(self, limit=None, offset=0):
         """从数据库中获取特定用户的历史消息"""
         hmdb_instance = await self.hmdb.connect()
         return await hmdb_instance.get_messages_by_user(
             user_id=self.user_id,
-            limit=limit, 
+            limit=limit,
             offset=offset
         )
-    
+
     async def get_all_users_history(self, limit=None, offset=0):
         """从数据库中获取所有用户的历史消息，按照时间排序"""
         hmdb_instance = await self.hmdb.connect()
