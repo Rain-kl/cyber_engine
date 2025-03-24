@@ -5,11 +5,10 @@ from loguru import logger
 
 from models import ChatCompletionRequest, ChatCompletionChunkResponse, TaskModel
 from .agent import QopProcess
-from .agent.FcAgent import instruction_to_function_mapper
+from .agent.FcAgent.mcp_tool_call import mcp_generate_tool_call
 from .agent.RouterAgent import RouterAgent
 from .hmq import connect_hmq
 # from .core import EngineCore
-from .plugins import tools
 from .task_db import task_center
 from .utils import ChunkWrapper
 
@@ -37,7 +36,7 @@ class Ponder:
 
         #   使用FcAgent处理指令
         try:
-            result = await instruction_to_function_mapper(user_messages, tools=tools)
+            result = await mcp_generate_tool_call(user_messages)
         except Exception as e:
             logger.trace(f"执行指令处理时出现错误: {e}")
             raise e
