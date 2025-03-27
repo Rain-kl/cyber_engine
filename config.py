@@ -24,10 +24,6 @@ class Configer(BaseSettings):
     embedding_base_url: Optional[str] = None
     embedding_api_key: Optional[str] = None
 
-    email_auth_code: Optional[str] = None
-    email_smtp_host: Optional[str] = None
-    email_sender: Optional[str] = None
-
     kb_base_url: str
     kb_api_key: str
     kb_dataset_id: str

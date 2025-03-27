@@ -2,6 +2,7 @@ from contextlib import AsyncExitStack
 from types import TracebackType
 from typing import Any, Literal, TypedDict, cast
 
+from httpx_sse import SSEError
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.sse import sse_client
 from mcp.client.stdio import stdio_client
@@ -220,16 +221,19 @@ class MCPClient:
             sse_read_timeout: SSE read timeout
         """
         # Create and store the connection
-        sse_transport = await self.exit_stack.enter_async_context(
-            sse_client(url, headers, timeout, sse_read_timeout)
-        )
-        read, write = sse_transport
-        session = cast(
-            ClientSession,
-            await self.exit_stack.enter_async_context(ClientSession(read, write)),
-        )
+        try:
+            sse_transport = await self.exit_stack.enter_async_context(
+                sse_client(url, headers, timeout, sse_read_timeout)
+            )
+            read, write = sse_transport
+            session = cast(
+                ClientSession,
+                await self.exit_stack.enter_async_context(ClientSession(read, write)),
+            )
 
-        await self._initialize_session_and_load_tools(server_name, session)
+            await self._initialize_session_and_load_tools(server_name, session)
+        except Exception as e:
+            raise SSEError(f"Failed to connect to SSE server at {url}") from e
 
     def get_tools(self) -> list[dict]:
         """Get a list of all tools from all connected servers."""
@@ -250,7 +254,15 @@ class MCPClient:
                 "parameters": tool.inputSchema
             }
         } for tool in all_tools]
-        return all_tools
+
+    def execute_tool(self, tool_name: str, tool_args: dict[str, Any]):
+        # Find the tool
+        for server_name, server_tools in self.server_name_to_tools.items():
+            for tool in server_tools:
+                if tool.name == tool_name:
+                    # Execute the tool
+                    return self.sessions[server_name].call_tool(tool_name, tool_args)
+        raise ValueError(f"Tool '{tool_name}' not found")
 
     async def __aenter__(self) -> "MCPClient":
         try:

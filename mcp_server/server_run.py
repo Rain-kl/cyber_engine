@@ -7,7 +7,6 @@ from starlette.routing import Mount, Route
 
 # 修改相对导入路径
 from plugins import mcp
-# 确保插件被导入
 
 
 def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlette:

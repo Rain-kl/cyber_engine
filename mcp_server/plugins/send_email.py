@@ -1,22 +1,36 @@
+import os
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 import aiosmtplib
+from dotenv import load_dotenv
 from loguru import logger
 from pydantic import EmailStr
 
-from config import config
+from .ext import mcp
 
-sender_email = config.email_sender
-authorization_code = config.email_auth_code
-email_smtp_host = config.email_smtp_host
+load_dotenv(dotenv_path=".env")
+
+sender_email = os.getenv("EMAIL_SENDER", None)
+email_smtp_host = os.getenv("EMAIL_SMTP_HOST", None)
+authorization_code = os.getenv("EMAIL_AUTH_CODE", None)
+assert sender_email and email_smtp_host and authorization_code, "Email configuration is not set up"
 
 
+@mcp.tool()
 async def send_email(
         subject: str,
         body: str,
         recipients: EmailStr
 ):
+    """ Send an email to the specified email with the subject and content，
+
+    Args:
+        subject: Subject of the email
+        body: Body of the email
+        recipients: The recipients' email addresses
+    """
+
     if not sender_email or not authorization_code or not email_smtp_host:
         logger.error("Email configuration is not set up")
         # elogger.log(EventLogModel(
