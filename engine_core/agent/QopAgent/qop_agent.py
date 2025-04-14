@@ -1,6 +1,6 @@
 from config import config
 from engine_core.utils import get_openai_client, ChunkWrapper
-from kb_sdk import KnowledgeBaseSDK
+from sdk.kb_sdk import KnowledgeBaseSDK
 
 
 class QopProcess:

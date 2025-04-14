@@ -4,8 +4,8 @@ from loguru import logger
 
 from config import config
 from engine_core.utils import get_openai_client
-from mcp_sdk import MCPClient
-from mcp_sdk.client import SSEConnection
+from sdk.mcp_sdk import MCPClient
+from sdk.mcp_sdk.client import SSEConnection
 
 
 class MCPToolCall:

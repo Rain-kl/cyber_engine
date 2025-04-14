@@ -1,0 +1,21 @@
+[project]
+name = "cyber-engine"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiosqlite>=0.21.0",
+    "fastapi>=0.115.12",
+    "httpx-sse>=0.4.0",
+    "httpx>=0.28.1",
+    "loguru>=0.7.3",
+    "openai>=1.70.0",
+    "pydantic-settings>=2.8.1",
+    "pydantic[email]>=2.11.2",
+    "tqdm>=4.67.1",
+    "uvicorn[standard]>=0.34.0",
+    "websocket-client>=1.8.0",
+    "mcp>=1.6.0",
+    "aiosmtplib>=4.0.0",
+]

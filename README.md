@@ -35,7 +35,7 @@ Cyber Engine 是一个基于 WebSocket 协议的智能对话引擎系统，通�
 
 2. 安装依赖
    ```bash
-   pip install -r requirements.txt
+   uv sync
    ```
 
 3. 配置环境
@@ -46,7 +46,7 @@ Cyber Engine 是一个基于 WebSocket 协议的智能对话引擎系统，通�
 
 4. 启动服务
    ```bash
-   python start_main_server.py
+   uv run start_main_server.py
    ```
 
 ### 使用方法
