@@ -3,7 +3,7 @@
 ---
 <div align="center">
 <p><strong>基于 WebSocket 的智能对话引擎，支持知识库问答和指令执行</strong></p>
-<a href="https://opensource.org/licenses/Apache-2.0"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-green.svg"></a>
+<a href="https://opensource.org/licenses/Apache-2.0"><img alt="License" src="https://img.shields.io/github/license/balancemymoney/balance-open.svg?style=flat-square"></a>
 <a><img alt="Static Badge" src="https://img.shields.io/badge/made_with-Python-blue"></a>
 </div>
 
