@@ -1,6 +1,4 @@
-import json
-
-from kb_sdk.utilities import AsyncSpider
+from sdk.kb_sdk.utilities import AsyncSpider
 
 
 class KnowledgeBaseSDK(AsyncSpider):

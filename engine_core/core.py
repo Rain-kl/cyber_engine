@@ -4,12 +4,12 @@ from typing import AsyncGenerator
 from loguru import logger
 
 from models import ChatCompletionRequest, ChatCompletionChunkResponse, TaskModel
+from models.ChatCompletionRequest import ExtraBody
 from .agent import QopProcess
-from .agent.FcAgent import instruction_to_function_mapper
+from .agent.FcAgent.mcp_tool_call import MCPToolCall
 from .agent.RouterAgent import RouterAgent
 from .hmq import connect_hmq
 # from .core import EngineCore
-from .plugins import tools
 from .task_db import task_center
 from .utils import ChunkWrapper
 
@@ -20,6 +20,7 @@ class Ponder:
         self.router_agent = RouterAgent()
         self.chat_completion_request = chat_completion_request
         self.hmq = connect_hmq(chat_completion_request.extra_headers.authorization)
+        self.mcp_tool_call = MCPToolCall()
 
     async def _execute_instruction(self, user_messages: list[dict[str, str]], user_id: str) -> AsyncGenerator[
         ChatCompletionChunkResponse, None]:
@@ -37,7 +38,7 @@ class Ponder:
 
         #   使用FcAgent处理指令
         try:
-            result = await instruction_to_function_mapper(user_messages, tools=tools)
+            result = await self.mcp_tool_call.generate_tool_call(user_messages)
         except Exception as e:
             logger.trace(f"执行指令处理时出现错误: {e}")
             raise e
@@ -114,6 +115,9 @@ class Ponder:
             user_id = self.chat_completion_request.extra_headers.authorization
             content = self.chat_completion_request.content
             user_messages = await self.hmq.add_user_message(content)
+            self.chat_completion_request.extra_body=ExtraBody(
+                FC_flag=True
+            )
 
             # 检查是否明确指定了FC_flag
             if (
@@ -151,6 +155,5 @@ class Ponder:
 
         except Exception as e:
             # 异常处理，确保错误被捕获并返回
-            logger.error(f"处理过程中出现错误: {str(e)}")
-            logger.trace(e)
+            logger.exception(f"处理过程中出现错误: {str(e)}")
             yield self.__chunk_wrapper.event_chunk_wrapper(f"处理过程中出现错误: {str(e)}")
