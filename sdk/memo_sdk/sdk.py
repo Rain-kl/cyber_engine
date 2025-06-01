@@ -33,7 +33,7 @@ class MemoryBaseSDK(AsyncSpider):
         curl --location --request POST 'https://api.fastgpt.in/api/core/dataset/searchTest' \
             --header 'Authorization: Bearer fastgpt-xxxxx' \
             --header 'Content-Type: application/json' \
-            --data-raw '{
+            --data-raw '{https://img.shields.io/github/license/balancemymoney/balance-open.svg?style=flat-square
                 "datasetId": "知识库的ID",
                 "text": "导演是谁",
                 "limit": 5000,

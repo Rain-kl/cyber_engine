@@ -5,7 +5,7 @@ from typing import Any
 from loguru import logger
 
 from config import config
-from engine_core.utils import get_openai_client, parse_json_object
+from engine_core.utils import get_openai_client, JsonParser
 from .prompt import fc_agent_prompt_generator
 
 
@@ -37,7 +37,7 @@ async def instruction_to_function_mapper(
             content = ''.join(re.findall(r"</think>(.*)", content, flags=re.DOTALL)).strip()
 
         # content = '这里是一些说明文字，接着出现一个 JSON 数组：[{"name": "Alice", "age": 25}, {"name": "Bob", "age": 30}]，后面还有其他文字'
-        return parse_json_object(content)
+        return JsonParser(content).parse()
     else:
         client = get_openai_client()
         response = await client.chat.completions.create(

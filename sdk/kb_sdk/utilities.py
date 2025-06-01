@@ -1,9 +1,8 @@
 import asyncio
 import functools
 import json
-import os.path
 from typing import Callable, Any
-from urllib.parse import urlparse
+
 import httpx
 from loguru import logger
 
