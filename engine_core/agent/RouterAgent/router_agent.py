@@ -14,7 +14,7 @@ class RouterAgent:
     def __init__(self):
         self.client = get_openai_client()
     
-    async def route(self, user_messages: list[dict[str, str]]) -> Tuple[Literal["instruction", "question"], Dict[str, Any]]:
+    async def run(self, user_messages: list[dict[str, str]]) -> Tuple[Literal["instruction", "question"], Dict[str, Any]]:
         """
         判断用户输入类型并返回路由结果
         

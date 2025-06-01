@@ -3,7 +3,7 @@ import time
 from fastapi import WebSocket
 from config import config
 from engine_core import Ponder
-from engine_core.utils import get_system_fingerprint, ChunkWrapper
+from engine_core.utils import ChunkWrapper
 from models import ChatCompletionRequest, ChatCompletionChunkResponse
 from models.ChatCompletionRequest import ExtraBody
 from models.openai_chat.chat_completion_chunk import Choice, ChoiceDelta
@@ -32,7 +32,7 @@ def finish_chunk(_id, created) -> ChatCompletionChunkResponse:
             )],
         created=created,
         object="chat.completion.chunk",
-        system_fingerprint=get_system_fingerprint()
+        system_fingerprint=ChunkWrapper().system_fingerprint
     )
 
 
