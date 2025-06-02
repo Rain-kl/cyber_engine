@@ -70,14 +70,23 @@ async def approve(chat_completion_request: ChatCompletionRequest, websocket: Web
         logger.error(f"出现未知错误: {err}")
         for i in f"error: {err}":
             await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
+    finally:
+        await manager.send_private_stream(chunk_wrapper.finish_chunk(), websocket)
 
 
 @command("/help")
 async def help_command(chat_completion_request: ChatCompletionRequest, websocket: WebSocket, chunk_wrapper):
     """显示帮助信息"""
-    commands_list = ", ".join(commands.keys())
-    for i in f"可用命令: {commands_list}":
-        await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
+    try:
+        commands_list = ", ".join(commands.keys())
+        for i in f"可用命令: {commands_list}":
+            await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
+    except Exception as e:
+        logger.error(f"显示帮助信息时出现错误: {e}")
+        for i in f"error: {e}":
+            await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
+    finally:
+        await manager.send_private_stream(chunk_wrapper.finish_chunk(), websocket)
 
 
 @command("/clear")
@@ -100,6 +109,8 @@ async def clear_chat_history(chat_completion_request: ChatCompletionRequest, web
         logger.error(f"清空聊天记录时出现错误: {e}")
         for i in f"error: {e}":
             await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
+    finally:
+        await manager.send_private_stream(chunk_wrapper.finish_chunk(), websocket)
 
 
 @command("/get-history")
@@ -114,6 +125,8 @@ async def get_history(chat_completion_request: ChatCompletionRequest, websocket:
         logger.error(f"获取聊天记录时出现错误: {e}")
         for i in f"error: {e}":
             await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
+    finally:
+        await manager.send_private_stream(chunk_wrapper.finish_chunk(), websocket)
 
 
 @command("/get-all-history")
@@ -141,6 +154,8 @@ async def get_all_history(chat_completion_request: ChatCompletionRequest, websoc
         logger.error(f"获取所有聊天记录时出现错误: {e}")
         for i in f"error: {e}":
             await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
+    finally:
+        await manager.send_private_stream(chunk_wrapper.finish_chunk(), websocket)
 
 
 @command("/get-all-users-history")
@@ -161,6 +176,8 @@ async def get_all_users_history(chat_completion_request: ChatCompletionRequest, 
         logger.error(f"获取所有用户聊天记录时出现错误: {e}")
         for i in f"error: {e}":
             await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
+    finally:
+        await manager.send_private_stream(chunk_wrapper.finish_chunk(), websocket)
 
 
 @command("/get-tools")
@@ -176,3 +193,5 @@ async def get_all_tools(chat_completion_request: ChatCompletionRequest, websocke
         logger.error(f"列出可用工具时出现错误: {e}")
         for i in f"error: {e}":
             await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
+    finally:
+        await manager.send_private_stream(chunk_wrapper.finish_chunk(), websocket)

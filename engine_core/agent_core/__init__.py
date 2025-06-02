@@ -24,7 +24,7 @@ class AgentCore:
                 yield self.chunk_wrapper.content_chunk_wrapper(word)
                 latest_response += word
 
-            while (response := XMlParser(latest_response).parse_function()) is not None:
+            while (response := XMlParser(latest_response).parse_call_expert()) is not None:
                 print(response)
                 latest_response = ""
                 if response.function == "call_expert":

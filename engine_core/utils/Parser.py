@@ -60,29 +60,32 @@ class JsonParser(Parser):
 
 
 class XMlParser(Parser):
-    def parse_function(self) -> FunctionXMLModel | None:
+
+    def parse_function(self, target_tag="use_tool") -> FunctionXMLModel | None:
         """
-        从字符串中解析XML并转换为JSON格式
+        从字符串中解析指定标签内的XML并转换为JSON格式
 
         Returns:
-            dict: 解析后的JSON格式数据，如果没有找到XML则返回None
+            FunctionXMLModel: 解析后的数据模型，如果没有找到指定标签则返回None
         """
-        # 使用正则表达式查找XML标签
-        xml_pattern = r'<(\w+)>(.*?)</\1>'
-        matches = re.findall(xml_pattern, self.content, re.DOTALL)
+        # 使用正则表达式查找指定标签及其内容
+        target_pattern = fr'<{target_tag}>(.*?)</{target_tag}>'
+        target_match = re.search(target_pattern, self.content, re.DOTALL)
 
-        if not matches:
+        if not target_match:
             return None
 
-        # 假设我们要处理的是第一个完整的XML结构
-        # 先找到最外层的XML标签
-        outer_xml_pattern = r'<(\w+)>.*?</\1>'
-        outer_match = re.search(outer_xml_pattern, self.content, re.DOTALL)
+        # 获取目标标签内的内容
+        target_content = target_match.group(1).strip()
 
-        if not outer_match:
+        # 查找标签内部的第一个完整XML标签
+        inner_xml_pattern = r'<(\w+)>.*?</\1>'
+        inner_match = re.search(inner_xml_pattern, target_content, re.DOTALL)
+
+        if not inner_match:
             return None
 
-        xml_content = outer_match.group(0)
+        xml_content = inner_match.group(0)
 
         try:
             # 解析XML
@@ -98,7 +101,48 @@ class XMlParser(Parser):
             # 遍历子元素
             for child in root:
                 result["params"].append(child.tag)
-                result["values"].append(child.text if child.text else "")
+                # 处理文本内容，去除首尾空白
+                text_value = child.text.strip() if child.text else ""
+                result["values"].append(text_value)
+
+            return FunctionXMLModel(**result)
+
+        except ET.ParseError as e:
+            print(f"XML解析错误: {e}")
+            return None
+
+    def parse_call_expert(self, target_tag="call_expert") -> FunctionXMLModel | None:
+        """
+        从字符串中解析指定标签内的XML并转换为JSON格式
+
+        Returns:
+            FunctionXMLModel: 解析后的数据模型，如果没有找到指定标签则返回None
+        """
+        target_pattern = fr'<{target_tag}>(.*?)</{target_tag}>'
+        target_match = re.search(target_pattern, self.content, re.DOTALL)
+
+        if not target_match:
+            return None
+
+        xml_content = target_match.group(0)
+
+        try:
+            # 解析XML
+            root = ET.fromstring(xml_content)
+
+            # 构建JSON结构
+            result = {
+                "function": root.tag,
+                "params": [],
+                "values": []
+            }
+
+            # 遍历子元素
+            for child in root:
+                result["params"].append(child.tag)
+                # 处理文本内容，去除首尾空白
+                text_value = child.text.strip() if child.text else ""
+                result["values"].append(text_value)
 
             return FunctionXMLModel(**result)
 

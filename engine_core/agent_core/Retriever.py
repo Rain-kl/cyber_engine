@@ -151,7 +151,7 @@ class Retriever(AgentBase):
                         yield f"\n[重新检索错误: {str(e)}]\n"
 
             # 输出最终答案(如果不是通过流式方式生成的)
-            if iteration_count <= max_iterations:
+            if iteration_count >= max_iterations:
                 yield "\n最终答案:\n"
                 yield f">>\n{final_answer}"
             yield "\n</step>\n\n\n"
