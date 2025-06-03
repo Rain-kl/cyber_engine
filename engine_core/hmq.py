@@ -10,6 +10,9 @@ class HMQueue(RedisSqlite):
         self.hmdb = HMDB(user_id)  # 初始化HMDB实例
 
     async def get_message(self) -> list:
+        """
+        获取用户的消息列表，如果不存在则初始化为空列表
+        """
         messages = await self.get(self.user_id)
         if not messages:
             await self.set(self.user_id, [])
@@ -17,6 +20,10 @@ class HMQueue(RedisSqlite):
         return messages
 
     async def add_user_message(self, value):
+        """
+        添加用户消息到消息列表中，如果消息已存在则不重复添加
+        如果消息超过最大上下文长度，将旧消息存入数据库
+        """
         messages = await self.get_message()
         if len(messages) > 0 and messages[-1]["content"] == value:
             return messages

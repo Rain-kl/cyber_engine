@@ -1,12 +1,13 @@
 import json
 import re
 import xml.etree.ElementTree as ET
-from typing import Dict
+from typing import Dict, Literal
 
 from pydantic import BaseModel
 
 
 class FunctionXMLModel(BaseModel):
+    type: Literal["use_tool", "call_expert"]
     function: str
     params: list
     values: list
@@ -61,7 +62,7 @@ class JsonParser(Parser):
 
 class XMlParser(Parser):
 
-    def parse_function(self, target_tag="use_tool") -> FunctionXMLModel | None:
+    def parse_function(self) -> FunctionXMLModel | None:
         """
         从字符串中解析指定标签内的XML并转换为JSON格式
 
@@ -69,6 +70,7 @@ class XMlParser(Parser):
             FunctionXMLModel: 解析后的数据模型，如果没有找到指定标签则返回None
         """
         # 使用正则表达式查找指定标签及其内容
+        target_tag = "use_tool"
         target_pattern = fr'<{target_tag}>(.*?)</{target_tag}>'
         target_match = re.search(target_pattern, self.content, re.DOTALL)
 
@@ -93,6 +95,7 @@ class XMlParser(Parser):
 
             # 构建JSON结构
             result = {
+                "type": target_tag,
                 "function": root.tag,
                 "params": [],
                 "values": []
@@ -111,13 +114,14 @@ class XMlParser(Parser):
             print(f"XML解析错误: {e}")
             return None
 
-    def parse_call_expert(self, target_tag="call_expert") -> FunctionXMLModel | None:
+    def parse_call_expert(self) -> FunctionXMLModel | None:
         """
         从字符串中解析指定标签内的XML并转换为JSON格式
 
         Returns:
             FunctionXMLModel: 解析后的数据模型，如果没有找到指定标签则返回None
         """
+        target_tag = "call_expert"
         target_pattern = fr'<{target_tag}>(.*?)</{target_tag}>'
         target_match = re.search(target_pattern, self.content, re.DOTALL)
 
@@ -132,6 +136,7 @@ class XMlParser(Parser):
 
             # 构建JSON结构
             result = {
+                "type": target_tag,
                 "function": root.tag,
                 "params": [],
                 "values": []
@@ -154,9 +159,11 @@ class XMlParser(Parser):
 if __name__ == '__main__':
     print(
         XMlParser("""
-                内心独白：我接收到了一个详细的上下文包。用户请求是“明天有雨通知我”。[environment_info]显示当前时间是晚上8点，位置是武汉。[retrieved_ltm]的Layer 3告诉我用户需要检查天气情况，如果天气恶劣则设置通知提醒。用户意图是查询天气并根据结果设置提醒，这是一个原子性任务，可以直接使用工具完成。我将使用搜索工具查询天气。
-                <tools>
-                <functionName>查阅2023-10-28武汉的天气</functionName>
-                </tools>
+   <use_tool>
+<set_reminder>
+<time>2023-10-28 15:00</time>
+<message>您下午5点在汉口站有火车，请提前准备</message>
+</set_reminder>
+</use_tool>
                 """
                   ).parse_function())
