@@ -37,7 +37,7 @@ class ChatCompletionRequest(BaseModel):
     frequency_penalty: Optional[float] = 0
     logit_bias: Optional[Dict[str, float]] = None
     user: Optional[str] = None
-    extra_headers: ExtraHeaders | None = (None,)
+    extra_headers: ExtraHeaders | None = None  # 修复: 改为 None 而不是 (None,)
     extra_body: ExtraBody | None = None
 
     @property
@@ -46,13 +46,39 @@ class ChatCompletionRequest(BaseModel):
         获取消息内容
         :return:
         """
-        # assert len(self.messages) == 1, f"Only one message is allowed but got {self.messages}"
-        if len(self.messages) != 1:
-            self.messages = self.messages[-1:]
-        if isinstance(self.messages[0].content, str):
-            return self.messages[0].content
-        elif isinstance(self.messages[0].content, list):
-            for m in self.messages[0].content:
+        # 修复: 不修改原始消息列表，只获取最后一条消息
+        if not self.messages:
+            return ""
+
+        last_message = self.messages[-1]
+
+        if isinstance(last_message.content, str):
+            return last_message.content
+        elif isinstance(last_message.content, list):
+            for m in last_message.content:
                 if m.type == "text":
                     return m.text
         return ""
+
+    def update_content(self, context: str) -> None:
+        """
+        更新上下文信息
+        :param context: 新的上下文内容
+        :return: None
+        """
+        assert self.messages is not None
+
+        # 只更新最后一条消息
+        if not self.messages:
+            return
+
+        last_message = self.messages[-1]
+
+        if isinstance(last_message.content, str):
+            last_message.content = context
+        elif isinstance(last_message.content, list):
+            # 修复: enumerate 返回 (index, item)，需要正确解包
+            for i, m in enumerate(last_message.content):
+                if m.type == "text":
+                    m.text = context
+                    break  # 只更新第一个找到的 text 类型内容
