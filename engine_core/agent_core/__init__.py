@@ -42,6 +42,7 @@ class AgentCore:
                 new_response = ""
                 if response.type == "call_expert":
                     if response.values[0] == "retriever":
+                        yield self.chunk_wrapper.content_chunk_wrapper("\n<calling>\n")
                         async for word in Retriever().run(response.values[1]):
                             new_response += word
                             yield self.chunk_wrapper.content_chunk_wrapper(word)
@@ -51,7 +52,10 @@ class AgentCore:
                             .strip()
                         )
                         new_response = f"<retriever>{new_response}</retriever>"
+                        yield self.chunk_wrapper.content_chunk_wrapper("\n</calling>\n")
+
                 elif response.type == "use_tool":
+                    yield self.chunk_wrapper.content_chunk_wrapper("\n<using>\n")
                     result = await self.mcp_tool_call.execute(
                         response.function, dict(zip(response.params, response.values))
                     )
@@ -60,6 +64,10 @@ class AgentCore:
                         new_response = f"<{response.function}>工具调用失败: {result.content}</{response.function}>"
                     else:
                         new_response = f"<{response.function}>{result.content}</{response.function}>"
+                    yield self.chunk_wrapper.content_chunk_wrapper(new_response)
+                    yield self.chunk_wrapper.content_chunk_wrapper("\n</using>\n")
+
+
 
                 assert new_response != "", "新响应不能为空"
                 user_messages = await self.hmq.add_user_message(new_response)

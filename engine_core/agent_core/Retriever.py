@@ -19,7 +19,7 @@ class Retriever(AgentBase):
     async def run(self, base_question):
         try:
             # 步骤1: 第一个agent直接回答问题(可能产生幻觉)
-            yield "[初始回答生成]\n"
+            yield "\n[初始回答生成]\n"
             initial_answer = ""
             try:
                 async for word in self.generate_initial_answer(base_question):
@@ -64,7 +64,7 @@ class Retriever(AgentBase):
                 awe_content = ""
                 try:
                     async for i in self.answer_with_evaluation(
-                        base_question, relevant_texts
+                            base_question, relevant_texts
                     ):
                         awe_content += i
                         yield i
@@ -99,14 +99,14 @@ class Retriever(AgentBase):
                             .strip()
                         )
                         if (
-                            evaluation.lower() == "y"
-                            or evaluation.lower() == "yes"
-                            or evaluation.lower() == "足够"
+                                evaluation.lower() == "y"
+                                or evaluation.lower() == "yes"
+                                or evaluation.lower() == "足够"
                         ):
                             is_sufficient = True
                     if (
-                        "<missing_info>" in awe_content
-                        and "</missing_info>" in awe_content
+                            "<missing_info>" in awe_content
+                            and "</missing_info>" in awe_content
                     ):
                         missing_info = (
                             awe_content.split("<missing_info>")[1]
@@ -145,7 +145,7 @@ class Retriever(AgentBase):
                         # 流式输出最终答案
                         try:
                             async for chunk in self.summarize_with_limited_info(
-                                base_question, relevant_texts
+                                    base_question, relevant_texts
                             ):
                                 final_answer += chunk
                                 yield chunk
@@ -228,14 +228,7 @@ class Retriever(AgentBase):
 
     async def answer_with_evaluation(self, question, context):
         """让agent解答并评估知识库内容是否足够"""
-        client = self.openai_client()
-        try:
-            response = await client.chat.completions.create(
-                model=config.llm_agent_model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": f"""
+        async for chunk in self.completions_create(f"""
                             You will be given a question and related knowledge base content. Please answer the question based on the knowledge base content.
                             Question: {question}
                             Knowledge base content:
@@ -248,7 +241,34 @@ class Retriever(AgentBase):
                             <answer>Your answer</answer>
                             <evaluation>Whether the knowledge base content is sufficient (y/n)</evaluation>
                             <missing_info>If insufficient, explain what specific information is missing, expressing the missing information in the form of questions</missing_info>
-                        """,
+        """):
+            yield chunk
+
+    async def summarize_with_limited_info(self, question, context):
+        """当达到最大迭代次数后，基于有限信息总结回答"""
+        async for chunk in self.completions_create(f"""
+                            你将获得一个问题和相关的知识库内容。虽然知识库内容可能不足以完整回答问题，
+                            但请尽力基于提供的信息回答问题，同时明确指出哪些部分是基于知识库的，哪些部分是你的推测。
+    
+                            问题: {question}
+    
+                            知识库内容:
+                            {context}
+    
+                            请尽力回答问题，明确区分事实和推测，并总结出最佳答案。
+          """):
+            yield chunk
+
+    async def completions_create(self, prompt):
+        """直接回答问题"""
+        client = self.openai_client()
+        try:
+            response = await client.chat.completions.create(
+                model=config.llm_agent_model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt,
                     }
                 ],
                 max_tokens=1000,
@@ -263,41 +283,4 @@ class Retriever(AgentBase):
             import traceback
 
             traceback.print_exc()
-            yield f"[评估回答发生错误: {str(e)}]"
-
-    async def summarize_with_limited_info(self, question, context):
-        """当达到最大迭代次数后，基于有限信息总结回答"""
-        client = self.openai_client()
-        try:
-            response = await client.chat.completions.create(
-                model=config.llm_agent_model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": f"""
-                            你将获得一个问题和相关的知识库内容。虽然知识库内容可能不足以完整回答问题，
-                            但请尽力基于提供的信息回答问题，同时明确指出哪些部分是基于知识库的，哪些部分是你的推测。
-    
-                            问题: {question}
-    
-                            知识库内容:
-                            {context}
-    
-                            请尽力回答问题，明确区分事实和推测，并总结出最佳答案。
-                            """,
-                    }
-                ],
-                max_tokens=1000,
-                temperature=0.3,
-                stream=True,
-            )
-
-            async for chunk in response:
-                if chunk.choices[0].delta.content is not None:
-                    yield chunk.choices[0].delta.content
-        except Exception as e:
-            print(f"summarize_with_limited_info 错误: {e}")
-            import traceback
-
-            traceback.print_exc()
-            yield f"[总结答案发生错误: {str(e)}]"
+            yield f"\n[评估回答发生错误: {str(e)}]\n"
