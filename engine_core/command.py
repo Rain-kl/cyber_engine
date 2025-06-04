@@ -4,7 +4,7 @@ import json
 from fastapi import WebSocket
 from loguru import logger
 
-from engine_core.agent.FcAgent.mcp_tool_call import MCPToolCall
+from engine_core.agent_core.MCPToolCall import MCPToolCall
 from engine_core.hmdb import connect_hmdb
 from engine_core.hmq import connect_hmq
 from engine_core.task_db import task_center
@@ -54,7 +54,7 @@ async def approve(
             logger.debug(f"tool_name - {tool_name}")
             logger.debug(f"tool_args - {tool_args}")
             try:
-                tool_result = await mcp_tool_call.execute_tool_call(
+                tool_result = await mcp_tool_call.execute(
                     tool_name, tool_args
                 )
                 if tool_result:

@@ -1,4 +1,4 @@
-from event_log import EventLog, EventLogModel
+from utils.event_log import EventLog, EventLogModel
 
 
 def test_EventLogModel():

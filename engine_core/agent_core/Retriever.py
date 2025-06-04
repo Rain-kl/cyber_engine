@@ -1,5 +1,3 @@
-import re
-
 from config import config
 from engine_core.agent_core.AgentBase import AgentBase
 from sdk.kb_sdk import KnowledgeBaseSDK
