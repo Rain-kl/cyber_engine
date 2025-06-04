@@ -14,16 +14,14 @@ load_dotenv(dotenv_path=".env")
 sender_email = os.getenv("EMAIL_SENDER", None)
 email_smtp_host = os.getenv("EMAIL_SMTP_HOST", None)
 authorization_code = os.getenv("EMAIL_AUTH_CODE", None)
-assert sender_email and email_smtp_host and authorization_code, "Email configuration is not set up"
+assert (
+    sender_email and email_smtp_host and authorization_code
+), "Email configuration is not set up"
 
 
 @mcp.tool()
-async def send_email(
-        subject: str,
-        body: str,
-        recipients: EmailStr
-):
-    """ Send an email to the specified email with the subject and content，
+async def send_email(subject: str, body: str, recipients: EmailStr):
+    """Send an email to the specified email with the subject and content，
 
     Args:
         subject: Subject of the email
@@ -59,7 +57,9 @@ async def send_email(
             use_tls=True,
         )
 
-        logger.success(f"Sending email to {recipients} with subject: {subject} and body: {body}")
+        logger.success(
+            f"Sending email to {recipients} with subject: {subject} and body: {body}"
+        )
 
         # elogger.log(EventLogModel(
         #     user_id=input_.user_id,
@@ -98,9 +98,9 @@ email_tools = {
                 "recipients": {
                     "type": "string",
                     "description": "The recipients' email addresses",
-                }
+                },
             },
             "required": ["subject", "body", "recipients"],
         },
-    }
+    },
 }

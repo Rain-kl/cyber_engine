@@ -16,6 +16,7 @@ def generate_id():
     生成对话ID
     """
     import uuid
+
     return f"chatcmpl-{uuid.uuid4().hex}"
 
 
@@ -24,19 +25,17 @@ def finish_chunk(_id, created) -> ChatCompletionChunkResponse:
         id=_id,
         model=config.virtual_model,
         choices=[
-            Choice(
-                delta=ChoiceDelta(),
-                index=0,
-                logprobs=None,
-                finish_reason="stop"
-            )],
+            Choice(delta=ChoiceDelta(), index=0, logprobs=None, finish_reason="stop")
+        ],
         created=created,
         object="chat.completion.chunk",
-        system_fingerprint=ChunkWrapper().system_fingerprint
+        system_fingerprint=ChunkWrapper().system_fingerprint,
     )
 
 
-async def handle_message(chat_completion_request: ChatCompletionRequest, websocket: WebSocket) -> None:
+async def handle_message(
+    chat_completion_request: ChatCompletionRequest, websocket: WebSocket
+) -> None:
     """
     处理WebSocket消息
     """
@@ -49,11 +48,15 @@ async def handle_message(chat_completion_request: ChatCompletionRequest, websock
         command_path = chat_completion_request.content.split()[0]  # 获取命令路径
         if command_path in commands:
             # 执行注册的命令处理函数
-            await commands[command_path](chat_completion_request, websocket, chunk_wrapper)
+            await commands[command_path](
+                chat_completion_request, websocket, chunk_wrapper
+            )
         else:
             # 未知命令
             for i in f"未知命令: {command_path}, 请使用 /help 获取帮助":
-                await manager.send_private_stream(chunk_wrapper.content_chunk_wrapper(i), websocket)
+                await manager.send_private_stream(
+                    chunk_wrapper.content_chunk_wrapper(i), websocket
+                )
     else:
         # 非命令消息处理
         # chat_completion_request.extra_body = ExtraBody(FC_flag=True)

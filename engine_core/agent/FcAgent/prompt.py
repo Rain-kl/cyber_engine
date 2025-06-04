@@ -1,5 +1,4 @@
-
-def fc_agent_prompt_generator(tools: list[str]|str) -> str:
+def fc_agent_prompt_generator(tools: list[str] | str) -> str:
     return f"""
         ## Role
         你是一个工具箱，你可以调用各种工具来帮助用户完成任务。

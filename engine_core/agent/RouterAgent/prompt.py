@@ -42,8 +42,8 @@ JSON示例：
 def router_agent_prompt() -> str:
     """
     生成路由代理的系统提示
-    
+
     Returns:
         str: 系统提示文本
     """
-    return ROUTER_PROMPT 
+    return ROUTER_PROMPT

@@ -6,17 +6,17 @@ class MemoryBaseSDK(AsyncSpider):
     def __init__(self, base_url, api_key, dataset_id):
         self.dataset_id = dataset_id
         self.headers = {
-            'Authorization': f'Bearer {api_key}',
-            'Content-Type': 'application/json'
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
         }
         super().__init__(base_url, headers=self.headers)
 
     async def search_memories(
-            self,
-            text,
-            limit="5000",
-            similarity="0.3",
-            search_mode="mixedRecall",
+        self,
+        text,
+        limit="5000",
+        similarity="0.3",
+        search_mode="mixedRecall",
     ):
         """
         datasetId - 知识库ID
@@ -71,11 +71,7 @@ class MemoryBaseSDK(AsyncSpider):
                 "limit": 1000
             }'
         """
-        payload = {
-            "fromDate": from_date,
-            "toDate": to_date,
-            "limit": limit
-        }
+        payload = {"fromDate": from_date, "toDate": to_date, "limit": limit}
         response = await self.post("/memory/list", _json=payload)
         # print(json.dumps(response.json(), indent=4, ensure_ascii=False))
         return response.json()

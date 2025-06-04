@@ -3,10 +3,10 @@ from abc import ABC, abstractmethod
 
 class RedisABC(ABC):
     def __init__(
-            self,
-            db_path: str,
-            db=0,
-            password=None,
+        self,
+        db_path: str,
+        db=0,
+        password=None,
     ):
         self.db_path = db_path
         self.db = db

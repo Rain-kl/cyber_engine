@@ -20,7 +20,9 @@ class ChoiceLogprobs(BaseModel):
 
 
 class Choice(BaseModel):
-    finish_reason: Literal["stop", "length", "tool_calls", "content_filter", "function_call"]
+    finish_reason: Literal[
+        "stop", "length", "tool_calls", "content_filter", "function_call"
+    ]
     """The reason the model stopped generating tokens.
 
     This will be `stop` if the model hit a natural stop point or a provided stop
@@ -56,7 +58,7 @@ class ChatCompletion(BaseModel):
     model: str
     """The model used for the chat completion."""
 
-    object: Literal["chat.completion"]="chat.completion"
+    object: Literal["chat.completion"] = "chat.completion"
     """The object type, which is always `chat.completion`."""
 
     service_tier: Optional[Literal["scale", "default"]] = None

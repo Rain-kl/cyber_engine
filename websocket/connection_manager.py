@@ -31,20 +31,24 @@ class ConnectionManager:
             model="ena-test",
             created=int(time.time()),
             object="chat.completion",
-            choices=[Choice(
-                finish_reason="stop",
-                index=0,
-                message=ChatCompletionMessage(
-                    content=message,
-                    role="assistant",
+            choices=[
+                Choice(
+                    finish_reason="stop",
+                    index=0,
+                    message=ChatCompletionMessage(
+                        content=message,
+                        role="assistant",
+                    ),
                 )
-            )]
+            ],
         )
         logger.info(f"Send -> {message}")
         await websocket.send_text(response.__str__())
 
     @staticmethod
-    async def send_private_stream(chunk: ChatCompletionChunkResponse, websocket: WebSocket):
+    async def send_private_stream(
+        chunk: ChatCompletionChunkResponse, websocket: WebSocket
+    ):
         """
         以流的方式发送消息
         :param chunk:

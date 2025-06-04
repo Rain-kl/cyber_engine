@@ -15,7 +15,8 @@ class User(Base):
     """
     用户表, 用于存储用户ID和标签
     """
-    __tablename__ = 'users'
+
+    __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
     portrait = Column(String(500))
@@ -25,7 +26,7 @@ class User(Base):
 
 
 class BindID(Base):
-    __tablename__ = 'bind_id'
+    __tablename__ = "bind_id"
 
     bindID = Column(Integer, primary_key=True)
     id = Column(Integer)
@@ -41,7 +42,7 @@ class UserDB(__SqliteORM):
         self._create_table(Base)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     db = UserDB("./test.db")
     # a = db.query(User).filter(User.id == 1).first()
     # print(a)

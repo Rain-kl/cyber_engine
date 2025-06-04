@@ -4,15 +4,15 @@ from typing import AsyncGenerator
 from loguru import logger
 
 from models import ChatCompletionRequest, ChatCompletionChunkResponse, TaskModel
-from models.ChatCompletionRequest import ExtraBody
 from .agent import QopProcess
 from .agent.FcAgent.mcp_tool_call import MCPToolCall
 from .agent.RouterAgent import RouterAgent
 from .agent_core import AgentCore
 from .hmq import connect_hmq
+
 # from .core import EngineCore
 from .task_db import task_center
-from .utils import ChunkWrapper
+from .utils import ChunkWrapper, deprecated
 
 
 class Ponder:
@@ -24,8 +24,7 @@ class Ponder:
         self.mcp_tool_call = MCPToolCall()
         self.agent = AgentCore(self.__chunk_wrapper, chat_completion_request)
 
-    async def run(self) -> AsyncGenerator[
-        ChatCompletionChunkResponse, None]:
+    async def run(self) -> AsyncGenerator[ChatCompletionChunkResponse, None]:
         """
         核心入口，处理输入，流式输出
 
@@ -33,59 +32,21 @@ class Ponder:
             异步生成器，生成响应块
         """
         try:
-            user_id = self.chat_completion_request.extra_headers.authorization
-            content = self.chat_completion_request.content
-            user_messages = await self.hmq.add_user_message(content)
-
-            async for chunk in self.agent.run(user_messages):
+            async for chunk in self.agent.run():
                 yield chunk
             yield self.__chunk_wrapper.finish_chunk()
-
-
-            # self.chat_completion_request.extra_body = ExtraBody(
-            #     FC_flag=True
-            # )
-            # # 检查是否明确指定了FC_flag
-            # if (
-            #         hasattr(self.chat_completion_request, 'extra_body')
-            #         and hasattr(self.chat_completion_request.extra_body, 'FC_flag')
-            #         and self.chat_completion_request.extra_body.FC_flag
-            # ):
-            #     logger.debug("enable FC_flag")
-            #     # 始终生成一个初始事件，确保函数至少有一个输出
-            #     for i in "Event: 开始任务":
-            #         yield self.__chunk_wrapper.content_chunk_wrapper(i)
-            #     yield self.__chunk_wrapper.content_chunk_wrapper("\n\n")
-            #
-            #     # 直接执行指令处理流程
-            #     async for chunk in self._execute_instruction(user_messages, user_id):
-            #         yield chunk
-            # elif (
-            #         hasattr(self.chat_completion_request, 'extra_body')
-            #         and hasattr(self.chat_completion_request.extra_body, 'RAG_flag')
-            #         and self.chat_completion_request.extra_body.RAG_flag
-            # ):
-            #     logger.debug("enable RAG_flag")
-            #     # 始终生成一个初始事件，确保函数至少有一个输出
-            #     for i in "Event: 开始检索":
-            #         yield self.__chunk_wrapper.content_chunk_wrapper(i)
-            #     yield self.__chunk_wrapper.content_chunk_wrapper("\n\n")
-            #
-            #     # 直接执行指令处理流程
-            #     async for chunk in self._search_knowledge_base(content):
-            #         yield chunk
-            # else:
-            #     # 执行自动路由流程
-            #     async for chunk in self._auto_route(user_messages, user_id):
-            #         yield chunk
 
         except Exception as e:
             # 异常处理，确保错误被捕获并返回
             logger.exception(f"处理过程中出现错误: {str(e)}")
-            yield self.__chunk_wrapper.event_chunk_wrapper(f"处理过程中出现错误: {str(e)}")
+            yield self.__chunk_wrapper.event_chunk_wrapper(
+                f"处理过程中出现错误: {str(e)}"
+            )
 
-    async def _execute_instruction(self, user_messages: list[dict[str, str]], user_id: str) -> AsyncGenerator[
-        ChatCompletionChunkResponse, None]:
+    @deprecated
+    async def _execute_instruction(
+        self, user_messages: list[dict[str, str]], user_id: str
+    ) -> AsyncGenerator[ChatCompletionChunkResponse, None]:
         """
         执行指令处理流程
 
@@ -107,16 +68,15 @@ class Ponder:
 
         if isinstance(result, list):
             # 将任务添加到任务中心
-            task_center.add_task(TaskModel(
-                user_id=user_id,
-                data=json.dumps(result)
-            ))
+            task_center.add_task(TaskModel(user_id=user_id, data=json.dumps(result)))
             yield self.__chunk_wrapper.content_chunk_wrapper("是否执行以下任务？\n")
         yield self.__chunk_wrapper.content_chunk_wrapper(str(result))
         await self.hmq.add_assistant_message(str(result))
 
-    async def _search_knowledge_base(self, content: str) -> AsyncGenerator[
-        ChatCompletionChunkResponse, None]:
+    @deprecated
+    async def _search_knowledge_base(
+        self, content: str
+    ) -> AsyncGenerator[ChatCompletionChunkResponse, None]:
         """
         执行知识库查询处理流程
 
@@ -126,7 +86,9 @@ class Ponder:
         Returns:
             异步生成器，生成响应块
         """
-        yield self.__chunk_wrapper.content_chunk_wrapper("正在查询相关信息以回答您的问题...\n")
+        yield self.__chunk_wrapper.content_chunk_wrapper(
+            "正在查询相关信息以回答您的问题...\n"
+        )
 
         # 使用QopAgent处理问题
         qop = QopProcess(self.__chunk_wrapper)
@@ -137,8 +99,10 @@ class Ponder:
 
         yield self.__chunk_wrapper.content_chunk_wrapper("生成完毕")
 
-    async def _auto_route(self, user_messages: list[dict[str, str]], user_id: str) -> AsyncGenerator[
-        ChatCompletionChunkResponse, None]:
+    @deprecated
+    async def _auto_route(
+        self, user_messages: list[dict[str, str]], user_id: str
+    ) -> AsyncGenerator[ChatCompletionChunkResponse, None]:
         """
         自动路由用户输入到合适的处理方法
 
@@ -153,12 +117,16 @@ class Ponder:
         input_type, details = await self.router_agent.run(user_messages)
 
         # 生成一个初始事件，指示当前处理模式
-        yield self.__chunk_wrapper.content_chunk_wrapper(f"Event: 内容类型 - {input_type}\n")
+        yield self.__chunk_wrapper.content_chunk_wrapper(
+            f"Event: 内容类型 - {input_type}\n"
+        )
 
         # 根据输入类型选择处理方法
         if input_type == "question":
             # 执行知识库查询处理流程
-            async for chunk in self._search_knowledge_base(user_messages[-1]['content']):
+            async for chunk in self._search_knowledge_base(
+                user_messages[-1]["content"]
+            ):
                 yield chunk
         else:
             # 执行指令处理流程
