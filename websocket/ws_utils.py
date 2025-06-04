@@ -1,6 +1,7 @@
 from loguru import logger
 from models import ChatCompletionRequest
 
+
 def parse_input_msg(data: dict) -> ChatCompletionRequest:
     """
     Parse a WebSocket message.

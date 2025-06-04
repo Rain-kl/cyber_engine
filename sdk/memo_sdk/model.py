@@ -5,5 +5,6 @@ class ChatSummary(TypedDict):
     """
     TypedDict for chat message summarization.
     """
+
     timestamp: int
     summary: str

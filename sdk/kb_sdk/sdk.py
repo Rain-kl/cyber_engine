@@ -5,8 +5,8 @@ class KnowledgeBaseSDK(AsyncSpider):
     def __init__(self, base_url, api_key, dataset_id):
         self.dataset_id = dataset_id
         self.headers = {
-            'Authorization': f'Bearer {api_key}',
-            'Content-Type': 'application/json'
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
         }
         super().__init__(base_url, headers=self.headers)
 
@@ -20,19 +20,19 @@ class KnowledgeBaseSDK(AsyncSpider):
                 "parentId":""
             }'
         """
-        payload = {
-            "parentId": parent_id
-        }
-        response = await self.post(f"/core/dataset/list?parentId={parent_id}", _json=payload)
+        payload = {"parentId": parent_id}
+        response = await self.post(
+            f"/core/dataset/list?parentId={parent_id}", _json=payload
+        )
         print(response.json())
         return response.json()
 
     async def search_dataset(
-            self,
-            text,
-            limit="5000",
-            similarity="0.3",
-            search_mode="mixedRecall",
+        self,
+        text,
+        limit="5000",
+        similarity="0.3",
+        search_mode="mixedRecall",
     ):
         """
         datasetId - 知识库ID
@@ -71,7 +71,7 @@ class KnowledgeBaseSDK(AsyncSpider):
             "usingReRank": False,
             "datasetSearchUsingExtensionQuery": False,
             "datasetSearchExtensionModel": "",
-            "datasetSearchExtensionBg": ""
+            "datasetSearchExtensionBg": "",
         }
         response = await self.post("/core/dataset/searchTest", _json=payload)
         # print(json.dumps(response.json(), indent=4, ensure_ascii=False))

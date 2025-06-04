@@ -1,7 +1,6 @@
-import mcp.types
 from contextlib import AsyncExitStack
 from types import TracebackType
-from typing import Any, Literal, TypedDict, cast
+from typing import Any, Literal, cast
 
 from httpx_sse import SSEError
 from mcp import ClientSession, StdioServerParameters
@@ -27,7 +26,9 @@ async def load_mcp_tools(session: ClientSession) -> list[Tool]:
 class MCPClient:
     """Client for connecting to multiple MCP servers and loading LangChain-compatible tools from them."""
 
-    def __init__(self, connections: dict[str, StdioConnection | SSEConnection] = None) -> None:
+    def __init__(
+        self, connections: dict[str, StdioConnection | SSEConnection] = None
+    ) -> None:
         """Initialize a MultiServerMCPClient with MCP servers connections.
 
         Args:
@@ -69,7 +70,9 @@ class MCPClient:
                 connection_dict = connection.copy()
                 transport = connection_dict.pop("transport")
                 if transport == "stdio":
-                    await self.connect_to_server_via_stdio(server_name, **connection_dict)
+                    await self.connect_to_server_via_stdio(
+                        server_name, **connection_dict
+                    )
                 elif transport == "sse":
                     await self.connect_to_server_via_sse(server_name, **connection_dict)
                 else:
@@ -82,15 +85,15 @@ class MCPClient:
             raise
 
     async def __aexit__(
-            self,
-            exc_type: type[BaseException] | None,
-            exc_val: BaseException | None,
-            exc_tb: TracebackType | None,
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         await self.exit_stack.aclose()
 
     async def _initialize_session_and_load_tools(
-            self, server_name: str, session: ClientSession
+        self, server_name: str, session: ClientSession
     ) -> None:
         """Initialize a session and load tools from it.
 
@@ -107,11 +110,11 @@ class MCPClient:
         self.server_name_to_tools[server_name] = server_tools
 
     async def connect_to_server(
-            self,
-            server_name: str,
-            *,
-            transport: Literal["stdio", "sse"] = "stdio",
-            **kwargs,
+        self,
+        server_name: str,
+        *,
+        transport: Literal["stdio", "sse"] = "stdio",
+        **kwargs,
     ) -> None:
         """Connect to an MCP server using either stdio or SSE.
 
@@ -135,7 +138,9 @@ class MCPClient:
                 url=kwargs["url"],
                 headers=kwargs.get("headers"),
                 timeout=kwargs.get("timeout", DEFAULT_HTTP_TIMEOUT),
-                sse_read_timeout=kwargs.get("sse_read_timeout", DEFAULT_SSE_READ_TIMEOUT),
+                sse_read_timeout=kwargs.get(
+                    "sse_read_timeout", DEFAULT_SSE_READ_TIMEOUT
+                ),
             )
         elif transport == "stdio":
             if "command" not in kwargs:
@@ -147,22 +152,24 @@ class MCPClient:
                 command=kwargs["command"],
                 args=kwargs["args"],
                 env=kwargs.get("env"),
-                encoding=kwargs.get("encoding", DEFAULT_ENCODING)
+                encoding=kwargs.get("encoding", DEFAULT_ENCODING),
             )
         else:
-            raise ValueError(f"Unsupported transport: {transport}. Must be 'stdio' or 'sse'")
+            raise ValueError(
+                f"Unsupported transport: {transport}. Must be 'stdio' or 'sse'"
+            )
 
     async def connect_to_server_via_stdio(
-            self,
-            server_name: str,
-            *,
-            command: str,
-            args: list[str],
-            env: dict[str, str] | None = None,
-            encoding: str = DEFAULT_ENCODING,
-            encoding_error_handler: Literal[
-                "strict", "ignore", "replace"
-            ] = DEFAULT_ENCODING_ERROR_HANDLER,
+        self,
+        server_name: str,
+        *,
+        command: str,
+        args: list[str],
+        env: dict[str, str] | None = None,
+        encoding: str = DEFAULT_ENCODING,
+        encoding_error_handler: Literal[
+            "strict", "ignore", "replace"
+        ] = DEFAULT_ENCODING_ERROR_HANDLER,
     ) -> None:
         """Connect to a specific MCP server using stdio
 
@@ -183,7 +190,9 @@ class MCPClient:
         )
 
         # Create and store the connection
-        stdio_transport = await self.exit_stack.enter_async_context(stdio_client(server_params))
+        stdio_transport = await self.exit_stack.enter_async_context(
+            stdio_client(server_params)
+        )
         read, write = stdio_transport
         session = cast(
             ClientSession,
@@ -193,13 +202,13 @@ class MCPClient:
         await self._initialize_session_and_load_tools(server_name, session)
 
     async def connect_to_server_via_sse(
-            self,
-            server_name: str,
-            *,
-            url: str,
-            headers: dict[str, Any] | None = None,
-            timeout: float = DEFAULT_HTTP_TIMEOUT,
-            sse_read_timeout: float = DEFAULT_SSE_READ_TIMEOUT,
+        self,
+        server_name: str,
+        *,
+        url: str,
+        headers: dict[str, Any] | None = None,
+        timeout: float = DEFAULT_HTTP_TIMEOUT,
+        sse_read_timeout: float = DEFAULT_SSE_READ_TIMEOUT,
     ) -> None:
         """Connect to a specific MCP server using SSE
 
@@ -236,14 +245,17 @@ class MCPClient:
         all_tools: list[Tool] = []
         for server_tools in self.server_name_to_tools.values():
             all_tools.extend(server_tools)
-        return [{
-            "type": "function",
-            "function": {
-                "name": tool.name,
-                "description": tool.description,
-                "parameters": tool.inputSchema
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": tool.inputSchema,
+                },
             }
-        } for tool in all_tools]
+            for tool in all_tools
+        ]
 
     def execute_tool(self, tool_name: str, tool_args: dict[str, Any]):
         # Find the tool

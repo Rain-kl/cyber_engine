@@ -30,10 +30,7 @@ class HMQueue(RedisSqlite):
         if len(messages) > 1 and messages[-2]["content"] == value:
             messages = messages[:-1]
             return messages
-        messages.append({
-            "role": "user",
-            "content": value
-        })
+        messages.append({"role": "user", "content": value})
 
         # 如果消息超过最大上下文长度，将旧消息存入数据库
         return await self.put2db(messages)
@@ -45,16 +42,13 @@ class HMQueue(RedisSqlite):
             # 将前overflow_count条消息存入数据库
             await self.store_messages_to_db(messages[:overflow_count])
             # 保留最近的max_context_length条消息
-            messages = messages[-self.max_context_length:]
+            messages = messages[-self.max_context_length :]
         await self.set(self.user_id, messages)
         return messages
 
     async def add_assistant_message(self, value):
         messages = await self.get_message()
-        messages.append({
-            "role": "assistant",
-            "content": value
-        })
+        messages.append({"role": "assistant", "content": value})
 
         # 如果消息超过最大上下文长度，将旧消息存入数据库
         return await self.put2db(messages)
@@ -64,17 +58,14 @@ class HMQueue(RedisSqlite):
         hmdb_instance = await self.hmdb.connect()
         for message in messages:
             await hmdb_instance.add_message(
-                role=message["role"],
-                content=message["content"]
+                role=message["role"], content=message["content"]
             )
 
     async def get_history_from_db(self, limit=None, offset=0):
         """从数据库中获取特定用户的历史消息"""
         hmdb_instance = await self.hmdb.connect()
         return await hmdb_instance.get_messages_by_user(
-            user_id=self.user_id,
-            limit=limit,
-            offset=offset
+            user_id=self.user_id, limit=limit, offset=offset
         )
 
     async def get_all_users_history(self, limit=None, offset=0):

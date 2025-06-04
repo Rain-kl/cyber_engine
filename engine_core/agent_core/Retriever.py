@@ -30,6 +30,7 @@ class Retriever(AgentBase):
             except Exception as e:
                 print(f"初始回答生成错误: {e}")
                 import traceback
+
                 traceback.print_exc()
                 yield f"\n[错误: {str(e)}]\n"
 
@@ -46,6 +47,7 @@ class Retriever(AgentBase):
             except Exception as e:
                 print(f"知识库检索错误: {e}")
                 import traceback
+
                 traceback.print_exc()
                 yield f"\n[错误: {str(e)}]\n"
                 relevant_texts = []
@@ -63,7 +65,9 @@ class Retriever(AgentBase):
                 yield f"迭代{iteration_count + 1}中...\n"
                 awe_content = ""
                 try:
-                    async for i in self.answer_with_evaluation(base_question, relevant_texts):
+                    async for i in self.answer_with_evaluation(
+                        base_question, relevant_texts
+                    ):
                         awe_content += i
                         yield i
                     yield "\n\n"
@@ -71,6 +75,7 @@ class Retriever(AgentBase):
                 except Exception as e:
                     print(f"回答评估错误: {e}")
                     import traceback
+
                     traceback.print_exc()
                     yield f"\n[错误: {str(e)}]\n"
                     awe_content = f"发生错误: {str(e)}"
@@ -81,20 +86,40 @@ class Retriever(AgentBase):
                     missing_info = ""
 
                     if "<answer>" in awe_content and "</answer>" in awe_content:
-                        answer = awe_content.split("<answer>")[1].split("</answer>")[0].strip()
+                        answer = (
+                            awe_content.split("<answer>")[1]
+                            .split("</answer>")[0]
+                            .strip()
+                        )
                     else:
                         answer = awe_content  # 如果没有按格式回答，就使用全部内容
 
                     if "<evaluation>" in awe_content and "</evaluation>" in awe_content:
-                        evaluation = awe_content.split("<evaluation>")[1].split("</evaluation>")[0].strip()
-                        if evaluation.lower() == "y" or evaluation.lower() == "yes" or evaluation.lower() == "足够":
+                        evaluation = (
+                            awe_content.split("<evaluation>")[1]
+                            .split("</evaluation>")[0]
+                            .strip()
+                        )
+                        if (
+                            evaluation.lower() == "y"
+                            or evaluation.lower() == "yes"
+                            or evaluation.lower() == "足够"
+                        ):
                             is_sufficient = True
-                    if "<missing_info>" in awe_content and "</missing_info>" in awe_content:
-                        missing_info = awe_content.split("<missing_info>")[1].split("</missing_info>")[0].strip()
+                    if (
+                        "<missing_info>" in awe_content
+                        and "</missing_info>" in awe_content
+                    ):
+                        missing_info = (
+                            awe_content.split("<missing_info>")[1]
+                            .split("</missing_info>")[0]
+                            .strip()
+                        )
 
                 except Exception as e:
                     print(f"解析回答错误: {e}")
                     import traceback
+
                     traceback.print_exc()
                     yield f"\n[解析回答错误: {str(e)}]\n"
                     answer = awe_content
@@ -121,12 +146,15 @@ class Retriever(AgentBase):
 
                         # 流式输出最终答案
                         try:
-                            async for chunk in self.summarize_with_limited_info(base_question, relevant_texts):
+                            async for chunk in self.summarize_with_limited_info(
+                                base_question, relevant_texts
+                            ):
                                 final_answer += chunk
                                 yield chunk
                         except Exception as e:
                             print(f"总结答案错误: {e}")
                             import traceback
+
                             traceback.print_exc()
                             yield f"\n[错误: {str(e)}]\n"
                             final_answer = f"生成最终答案时发生错误: {str(e)}"
@@ -135,8 +163,12 @@ class Retriever(AgentBase):
                     # 否则，使用缺失信息再次查询知识库
                     yield f"使用缺失信息重新检索知识库...\n"
                     try:
-                        new_kb_results = await self.kb.search_dataset(f"{base_question} {missing_info}")
-                        new_relevant_texts = [item["q"] for item in new_kb_results["data"]["list"]]
+                        new_kb_results = await self.kb.search_dataset(
+                            f"{base_question} {missing_info}"
+                        )
+                        new_relevant_texts = [
+                            item["q"] for item in new_kb_results["data"]["list"]
+                        ]
 
                         # 合并所有相关文本，避免丢失之前的上下文
                         relevant_texts.extend(new_relevant_texts)
@@ -147,6 +179,7 @@ class Retriever(AgentBase):
                     except Exception as e:
                         print(f"重新检索知识库错误: {e}")
                         import traceback
+
                         traceback.print_exc()
                         yield f"\n[重新检索错误: {str(e)}]\n"
 
@@ -158,6 +191,7 @@ class Retriever(AgentBase):
         except Exception as e:
             print(f"整体执行错误: {e}")
             import traceback
+
             traceback.print_exc()
             yield f"\n[严重错误: {str(e)}]\n"
 
@@ -177,12 +211,12 @@ class Retriever(AgentBase):
                         用户问题: {question}
 
                         请直接回答，不要包含"我认为"、"根据我所知"等表示不确定的词语。
-                        """
+                        """,
                     }
                 ],
                 max_tokens=800,
                 temperature=0.7,  # 使用较高的温度让回答更加多样化
-                stream=True
+                stream=True,
             )
             async for chunk in response:
                 if chunk.choices[0].delta.content is not None:
@@ -190,6 +224,7 @@ class Retriever(AgentBase):
         except Exception as e:
             print(f"generate_initial_answer 错误: {e}")
             import traceback
+
             traceback.print_exc()
             yield f"[生成回答发生错误: {str(e)}]"
 
@@ -215,12 +250,12 @@ class Retriever(AgentBase):
                             <answer>Your answer</answer>
                             <evaluation>Whether the knowledge base content is sufficient (y/n)</evaluation>
                             <missing_info>If insufficient, explain what specific information is missing, expressing the missing information in the form of questions</missing_info>
-                        """
+                        """,
                     }
                 ],
                 max_tokens=1000,
                 temperature=0.3,
-                stream=True
+                stream=True,
             )
             async for chunk in response:
                 if chunk.choices[0].delta.content is not None:
@@ -228,6 +263,7 @@ class Retriever(AgentBase):
         except Exception as e:
             print(f"answer_with_evaluation 错误: {e}")
             import traceback
+
             traceback.print_exc()
             yield f"[评估回答发生错误: {str(e)}]"
 
@@ -250,7 +286,7 @@ class Retriever(AgentBase):
                             {context}
     
                             请尽力回答问题，明确区分事实和推测，并总结出最佳答案。
-                            """
+                            """,
                     }
                 ],
                 max_tokens=1000,
@@ -264,5 +300,6 @@ class Retriever(AgentBase):
         except Exception as e:
             print(f"summarize_with_limited_info 错误: {e}")
             import traceback
+
             traceback.print_exc()
             yield f"[总结答案发生错误: {str(e)}]"

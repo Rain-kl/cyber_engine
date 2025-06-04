@@ -43,7 +43,7 @@ class JsonParser(Parser):
                 # 当 stack 恰好为 0 时，说明匹配完成
                 if stack == 0:
                     end_index = j  # JSON 对象的结束下标
-                    json_str = "".join(content_arr[start_index:end_index + 1])
+                    json_str = "".join(content_arr[start_index : end_index + 1])
                     try:
                         result = json.loads(json_str)
                     except json.JSONDecodeError as e:
@@ -71,7 +71,7 @@ class XMlParser(Parser):
         """
         # 使用正则表达式查找指定标签及其内容
         target_tag = "use_tool"
-        target_pattern = fr'<{target_tag}>(.*?)</{target_tag}>'
+        target_pattern = rf"<{target_tag}>(.*?)</{target_tag}>"
         target_match = re.search(target_pattern, self.content, re.DOTALL)
 
         if not target_match:
@@ -81,7 +81,7 @@ class XMlParser(Parser):
         target_content = target_match.group(1).strip()
 
         # 查找标签内部的第一个完整XML标签
-        inner_xml_pattern = r'<(\w+)>.*?</\1>'
+        inner_xml_pattern = r"<(\w+)>.*?</\1>"
         inner_match = re.search(inner_xml_pattern, target_content, re.DOTALL)
 
         if not inner_match:
@@ -98,7 +98,7 @@ class XMlParser(Parser):
                 "type": target_tag,
                 "function": root.tag,
                 "params": [],
-                "values": []
+                "values": [],
             }
 
             # 遍历子元素
@@ -122,7 +122,7 @@ class XMlParser(Parser):
             FunctionXMLModel: 解析后的数据模型，如果没有找到指定标签则返回None
         """
         target_tag = "call_expert"
-        target_pattern = fr'<{target_tag}>(.*?)</{target_tag}>'
+        target_pattern = rf"<{target_tag}>(.*?)</{target_tag}>"
         target_match = re.search(target_pattern, self.content, re.DOTALL)
 
         if not target_match:
@@ -139,7 +139,7 @@ class XMlParser(Parser):
                 "type": target_tag,
                 "function": root.tag,
                 "params": [],
-                "values": []
+                "values": [],
             }
 
             # 遍历子元素
@@ -156,9 +156,10 @@ class XMlParser(Parser):
             return None
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print(
-        XMlParser("""
+        XMlParser(
+            """
    <use_tool>
 <set_reminder>
 <time>2023-10-28 15:00</time>
@@ -166,4 +167,5 @@ if __name__ == '__main__':
 </set_reminder>
 </use_tool>
                 """
-                  ).parse_function())
+        ).parse_function()
+    )

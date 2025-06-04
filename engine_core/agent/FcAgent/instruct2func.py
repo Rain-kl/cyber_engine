@@ -11,7 +11,7 @@ from .prompt import fc_agent_prompt_generator
 
 # @get_time_async
 async def instruction_to_function_mapper(
-        user_messages: list[dict[str, str]], tools: list[dict], use_prompt=True
+    user_messages: list[dict[str, str]], tools: list[dict], use_prompt=True
 ) -> Any:
     """用于不支持function calling的模型，将指令映射到函数"""
     if use_prompt:
@@ -20,13 +20,7 @@ async def instruction_to_function_mapper(
         prompt = fc_agent_prompt_generator(str(tools))
         response = await client.chat.completions.create(
             model=config.llm_agent_model,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                },
-                *user_messages
-            ],
+            messages=[{"role": "user", "content": prompt}, *user_messages],
             max_tokens=200,
             temperature=0.1,
         )
@@ -34,7 +28,9 @@ async def instruction_to_function_mapper(
         content = response.choices[0].message.content
         assert content is not None, f"Content is None: {response}"
         if content.startswith("<think>"):
-            content = ''.join(re.findall(r"</think>(.*)", content, flags=re.DOTALL)).strip()
+            content = "".join(
+                re.findall(r"</think>(.*)", content, flags=re.DOTALL)
+            ).strip()
 
         # content = '这里是一些说明文字，接着出现一个 JSON 数组：[{"name": "Alice", "age": 25}, {"name": "Bob", "age": 30}]，后面还有其他文字'
         return JsonParser(content).parse()
@@ -62,10 +58,12 @@ async def instruction_to_function_mapper(
                 logger.debug(f"tool_name - {tool_name}")
                 logger.debug(f"tool_args - {tool_args}")
 
-                tools_chain.append({
-                    "tool_name": tool_name,
-                    "tool_args": tool_args,
-                })
+                tools_chain.append(
+                    {
+                        "tool_name": tool_name,
+                        "tool_args": tool_args,
+                    }
+                )
             return tools_chain
         else:
             return response.choices[0].message.content

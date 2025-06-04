@@ -10,9 +10,9 @@ from .Retriever import Retriever
 
 class AgentCore:
     def __init__(
-            self,
-            chunk_wrapper: ChunkWrapper,
-            chat_completion_request: ChatCompletionRequest,
+        self,
+        chunk_wrapper: ChunkWrapper,
+        chat_completion_request: ChatCompletionRequest,
     ):
         self.chat_completion_request = chat_completion_request
         self.chunk_wrapper = chunk_wrapper
@@ -45,12 +45,15 @@ class AgentCore:
                         async for word in Retriever().run(response.values[1]):
                             new_response += word
                             yield self.chunk_wrapper.content_chunk_wrapper(word)
-                        new_response = new_response.split("<final_answer>")[1].split("</final_answer>")[0].strip()
+                        new_response = (
+                            new_response.split("<final_answer>")[1]
+                            .split("</final_answer>")[0]
+                            .strip()
+                        )
                         new_response = f"<retriever>{new_response}</retriever>"
                 elif response.type == "use_tool":
                     result = await self.mcp_tool_call.execute(
-                        response.function,
-                        dict(zip(response.params, response.values))
+                        response.function, dict(zip(response.params, response.values))
                     )
                     if result.isError:
                         logger.error(f"工具调用失败: {result.error}")

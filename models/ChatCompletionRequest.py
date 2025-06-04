@@ -37,7 +37,7 @@ class ChatCompletionRequest(BaseModel):
     frequency_penalty: Optional[float] = 0
     logit_bias: Optional[Dict[str, float]] = None
     user: Optional[str] = None
-    extra_headers: ExtraHeaders | None = None,
+    extra_headers: ExtraHeaders | None = (None,)
     extra_body: ExtraBody | None = None
 
     @property

@@ -3,9 +3,9 @@ from .ext import mcp
 
 @mcp.tool()
 async def search_web(
-        query: str,
+    query: str,
 ):
-    """ Perform a web search based on the provided query.
+    """Perform a web search based on the provided query.
 
     Args:
         query: The search query to perform on the web (e.g. "latest news", "weather today")

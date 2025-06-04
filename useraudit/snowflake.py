@@ -7,7 +7,6 @@ class InvalidSystemClock(Exception):
         pass
 
 
-
 class SnowFlake(object):
     """
     用于生成IDS.
@@ -33,7 +32,7 @@ class SnowFlake(object):
     # Twitter 元年时间戳
     TW_EPOCH = 1288834974657
 
-    logger = logging.getLogger('雪花算法')
+    logger = logging.getLogger("雪花算法")
 
     def __init__(self, datacenter_id=1, worker_id=2, sequence=0):
         """
@@ -43,9 +42,9 @@ class SnowFlake(object):
         :param sequence:序列码
         """
         if worker_id > self.MAX_WORKER_ID or worker_id < 0:
-            raise ValueError('worker_id 值越界')
+            raise ValueError("worker_id 值越界")
         if datacenter_id > self.MAX_DATACENTER_ID or datacenter_id < 0:
-            raise ValueError('datacenter_id 值越界')
+            raise ValueError("datacenter_id 值越界")
 
         self.worker_id = worker_id
         self.datacenter_id = datacenter_id
@@ -71,7 +70,11 @@ class SnowFlake(object):
 
         # 时钟回拨的情况
         if timestamp < self.last_timestamp:
-            logging.error('clock is moving backwards. Rejecting requests util {}'.format(self.last_timestamp))
+            logging.error(
+                "clock is moving backwards. Rejecting requests util {}".format(
+                    self.last_timestamp
+                )
+            )
             raise InvalidSystemClock
 
         if timestamp == self.last_timestamp:
@@ -84,8 +87,11 @@ class SnowFlake(object):
 
         self.last_timestamp = timestamp
 
-        new_id = (((timestamp - self.TW_EPOCH) << self.TIMESTAMP_LEFT_SHIFT) | (self.datacenter_id << self.DATACENTER_ID_SHIFT) | (
-                self.worker_id << self.WORKER_ID_SHIFT)) | self.sequence
+        new_id = (
+            ((timestamp - self.TW_EPOCH) << self.TIMESTAMP_LEFT_SHIFT)
+            | (self.datacenter_id << self.DATACENTER_ID_SHIFT)
+            | (self.worker_id << self.WORKER_ID_SHIFT)
+        ) | self.sequence
         return new_id
 
     def _til_next_millis(self, last_timestamp):
@@ -100,7 +106,7 @@ class SnowFlake(object):
         return timestamp
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     worker = SnowFlake(1, 2, 0)
     print(type(worker.get_id()))
     print(worker.get_id())

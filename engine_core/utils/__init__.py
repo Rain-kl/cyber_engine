@@ -8,4 +8,11 @@ def get_openai_client():
     return AsyncOpenAI()
 
 
-__all__ = ["ChunkWrapper", "Parser", "XMlParser", "JsonParser", "get_openai_client", "deprecated"]
+__all__ = [
+    "ChunkWrapper",
+    "Parser",
+    "XMlParser",
+    "JsonParser",
+    "get_openai_client",
+    "deprecated",
+]

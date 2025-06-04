@@ -2,6 +2,7 @@ from .QopAgent.qop_agent import QopProcess
 from .RouterAgent import RouterAgent
 import time
 from loguru import logger
+
 # from llama_index.postprocessor.flag_embedding_reranker import (
 #     FlagEmbeddingReranker,
 # )
@@ -14,4 +15,4 @@ from loguru import logger
 # )
 # logger.success(f"Reranker model loading complete. spend: {time.time() - start_time}")
 
-__all__ = ['QopProcess', 'RouterAgent']
+__all__ = ["QopProcess", "RouterAgent"]

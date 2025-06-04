@@ -7,7 +7,11 @@ from openai import AsyncOpenAI
 
 from config import config
 from models import ChatCompletionChunkResponse
-from models.openai_chat.chat_completion_chunk import Choice, ChoiceDelta, ChatCompletionChunk
+from models.openai_chat.chat_completion_chunk import (
+    Choice,
+    ChoiceDelta,
+    ChatCompletionChunk,
+)
 
 
 class ChunkWrapper:
@@ -29,11 +33,12 @@ class ChunkWrapper:
                     ),
                     index=0,
                     logprobs=None,
-                    finish_reason=None
-                )],
+                    finish_reason=None,
+                )
+            ],
             created=self._created,
             object="chat.completion.chunk",
-            system_fingerprint=self.system_fingerprint
+            system_fingerprint=self.system_fingerprint,
         )
 
     def step_chunk_wrapper(self, step_tag, step_content) -> ChatCompletionChunkResponse:
@@ -48,15 +53,17 @@ class ChunkWrapper:
                     ),
                     index=0,
                     logprobs=None,
-                    finish_reason=None
-                )],
+                    finish_reason=None,
+                )
+            ],
             created=self._created,
             object="chat.completion.chunk",
-            system_fingerprint=self.system_fingerprint
+            system_fingerprint=self.system_fingerprint,
         )
 
-    def step_chunk_wrapper_stream(self, step_tag, step_func: Callable, *args, **kwargs) -> Generator[
-        ChatCompletionChunk, None, None]:
+    def step_chunk_wrapper_stream(
+        self, step_tag, step_func: Callable, *args, **kwargs
+    ) -> Generator[ChatCompletionChunk, None, None]:
         yield self.content_chunk_wrapper(f"<step>[{step_tag}]")
         response: str = step_func(*args, **kwargs)
         for i in response:
@@ -64,7 +71,9 @@ class ChunkWrapper:
         yield self.content_chunk_wrapper("</step>")
         yield self.content_chunk_wrapper("\n\n\n")
 
-    def content_chunk_wrapper(self, content: str, line_break=False) -> ChatCompletionChunkResponse:
+    def content_chunk_wrapper(
+        self, content: str, line_break=False
+    ) -> ChatCompletionChunkResponse:
         if line_break:
             content = content + "\n\n"
         return ChatCompletionChunkResponse(
@@ -78,11 +87,12 @@ class ChunkWrapper:
                     ),
                     index=0,
                     logprobs=None,
-                    finish_reason=None
-                )],
+                    finish_reason=None,
+                )
+            ],
             created=self._created,
             object="chat.completion.chunk",
-            system_fingerprint=self.system_fingerprint
+            system_fingerprint=self.system_fingerprint,
         )
 
     def finish_chunk(self) -> ChatCompletionChunkResponse:
@@ -91,12 +101,10 @@ class ChunkWrapper:
             model=config.virtual_model,
             choices=[
                 Choice(
-                    delta=ChoiceDelta(),
-                    index=0,
-                    logprobs=None,
-                    finish_reason="stop"
-                )],
+                    delta=ChoiceDelta(), index=0, logprobs=None, finish_reason="stop"
+                )
+            ],
             created=self._created,
             object="chat.completion.chunk",
-            system_fingerprint=self.system_fingerprint
+            system_fingerprint=self.system_fingerprint,
         )

@@ -13,15 +13,12 @@ class MCPToolCall:
 
         self.connections = {
             "basic_tools": SSEConnection(
-                transport="sse",
-                url="http://localhost:3001/sse"
+                transport="sse", url="http://localhost:3001/sse"
             )
         }
 
     async def generate_tool_call(self, user_messages: list[dict[str, str]]):
-        async with MCPClient(
-                self.connections
-        ) as mcp_client:
+        async with MCPClient(self.connections) as mcp_client:
             client = get_openai_client()
             response = await client.chat.completions.create(
                 model=config.llm_agent_model,
@@ -45,22 +42,22 @@ class MCPToolCall:
                     logger.debug(f"tool_name - {tool_name}")
                     logger.debug(f"tool_args - {tool_args}")
 
-                    tools_chain.append({
-                        "tool_name": tool_name,
-                        "tool_args": tool_args,
-                    })
+                    tools_chain.append(
+                        {
+                            "tool_name": tool_name,
+                            "tool_args": tool_args,
+                        }
+                    )
                 return tools_chain
             else:
                 return response.choices[0].message.content
 
-    async def execute_tool_call(self, tool_name: str, tool_args: dict) -> mcp.types.CallToolResult:
-        async with MCPClient(
-                self.connections
-        ) as mcp_client:
+    async def execute_tool_call(
+        self, tool_name: str, tool_args: dict
+    ) -> mcp.types.CallToolResult:
+        async with MCPClient(self.connections) as mcp_client:
             return await mcp_client.execute_tool(tool_name, tool_args)
 
     async def get_tools(self):
-        async with MCPClient(
-                self.connections
-        ) as mcp_client:
+        async with MCPClient(self.connections) as mcp_client:
             return mcp_client.get_tools()

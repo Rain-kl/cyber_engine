@@ -8,6 +8,7 @@ from models.ChatCompletionRequest import ExtraHeaders
 from .client_list import websocket_list
 from .connection_manager import manager
 from .message_handler import handle_message
+
 # from .scheduler import scheduled_broadcast
 from .ws_utils import parse_input_msg
 
@@ -30,9 +31,13 @@ async def websocket_endpoint(websocket: WebSocket, authorization: str):
             try:
                 data = json.loads(received_text)
                 completion_request = parse_input_msg(data)
-                completion_request.extra_headers = ExtraHeaders(authorization=authorization)
+                completion_request.extra_headers = ExtraHeaders(
+                    authorization=authorization
+                )
             except (ValueError, TypeError) as e:
-                await manager.send_private_exception(TypeError("Invalid formate"), websocket)
+                await manager.send_private_exception(
+                    TypeError("Invalid formate"), websocket
+                )
                 return
 
             logger.info(f"Received <- {data}")

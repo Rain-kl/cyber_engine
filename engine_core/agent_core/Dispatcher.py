@@ -135,13 +135,13 @@ Important Note: When using use_tool for tool invocation, please ensure you selec
                 {
                     "role": "system",
                     # "content": "你是一个智能助理"
-                    "content": self._prompt
+                    "content": self._prompt,
                 },
-                *user_messages
+                *user_messages,
             ],
             max_tokens=200,
             temperature=0.1,
-            stream=True
+            stream=True,
         )
         async for chunk in response:
             if chunk.choices[0].delta.content is not None:
