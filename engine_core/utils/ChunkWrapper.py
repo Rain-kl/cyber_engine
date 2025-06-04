@@ -1,9 +1,5 @@
-import json
 from collections.abc import Callable
-from typing import Dict
 from typing import Generator
-
-from openai import AsyncOpenAI
 
 from config import config
 from models import ChatCompletionChunkResponse
