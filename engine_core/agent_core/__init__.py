@@ -1,9 +1,10 @@
 from loguru import logger
 
-from engine_core.utils import ChunkWrapper, XMlParser
 from engine_core.hmq import connect_hmq
+from engine_core.utils import ChunkWrapper, XMlParser
 from models import ChatCompletionRequest
 from .Dispatcher import Dispatcher
+from .MCPToolCall import MCPToolCall
 from .Retriever import Retriever
 
 
@@ -17,6 +18,7 @@ class AgentCore:
         self.chunk_wrapper = chunk_wrapper
         self.user_id = chat_completion_request.extra_headers.authorization
         self.hmq = connect_hmq(chat_completion_request.extra_headers.authorization)
+        self.mcp_tool_call = MCPToolCall()
 
     async def run(self):
         try:
@@ -24,7 +26,8 @@ class AgentCore:
             user_messages = await self.hmq.add_user_message(content)
 
             latest_response = ""
-            async for word in Dispatcher().run(user_messages):
+            support_tools = await self.mcp_tool_call.get_openai_format_tools()
+            async for word in Dispatcher(support_tools).run(user_messages):
                 yield self.chunk_wrapper.content_chunk_wrapper(word)
                 latest_response += word
             while True:
@@ -45,16 +48,21 @@ class AgentCore:
                         new_response = new_response.split("<final_answer>")[1].split("</final_answer>")[0].strip()
                         new_response = f"<retriever>{new_response}</retriever>"
                 elif response.type == "use_tool":
-                    for word in f"\n 使用工具: {response.function}，参数: {response.params}, 值: {response.values}":
-                        yield self.chunk_wrapper.content_chunk_wrapper(word)
-                    new_response = f"<{response.function}>执行完毕</{response.function}>"
+                    result = await self.mcp_tool_call.execute(
+                        response.function,
+                        dict(zip(response.params, response.values))
+                    )
+                    if result.isError:
+                        logger.error(f"工具调用失败: {result.error}")
+                        new_response = f"<{response.function}>工具调用失败: {result.content}</{response.function}>"
+                    else:
+                        new_response = f"<{response.function}>{result.content}</{response.function}>"
 
                 assert new_response != "", "新响应不能为空"
                 user_messages = await self.hmq.add_user_message(new_response)
-                async for word in Dispatcher().run(user_messages):
+                async for word in Dispatcher(support_tools).run(user_messages):
                     yield self.chunk_wrapper.content_chunk_wrapper(word)
                     latest_response += word
-
 
         except Exception as e:
             logger.error(f"AgentCore处理出错: {e}")

@@ -1,13 +1,15 @@
-from engine_core.agent_core.AgentBase import AgentBase
-from config import config
 from loguru import logger
+
+from engine_core.agent_core.AgentBase import AgentBase
 
 
 class Dispatcher(AgentBase):
+    def __init__(self, mcp_tools: list):
+        self.mcp_tools = mcp_tools
 
     @property
     def _prompt(self, **kwargs):
-        return """
+        return f"""
         Intelligent Agent Workflow Coordinator
 Core Role
 You are the core coordinator of intelligent agent workflows, making decisions and behaviors strictly based on context packages provided by the system. You must always respond in the user's language.
@@ -119,6 +121,8 @@ One Operation at a Time: Wait for system response after each XML output
 Personalized Service: Proactively provide thoughtful service combining historical behavior patterns
 Language Consistency: Always detect and maintain the user's language throughout the entire interaction - this is a critical requirement
 
+Currently supported tool functions include: {self.mcp_tools}
+Important Note: When using use_tool for tool invocation, please ensure you select only from the above list. If you need to perform operations outside this scope, I will kindly inform you: "Sorry, this feature is not currently supported. Please look forward to future updates."
         """
 
     async def run(self, user_messages):

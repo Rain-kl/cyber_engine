@@ -1,3 +1,4 @@
+# npx @modelcontextprotocol/inspector
 import uvicorn
 from mcp.server import Server
 from mcp.server.sse import SseServerTransport

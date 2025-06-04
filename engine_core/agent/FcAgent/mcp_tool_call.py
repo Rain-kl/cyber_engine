@@ -1,11 +1,11 @@
 import json
 
 from loguru import logger
-
 from config import config
 from engine_core.utils import get_openai_client
 from sdk.mcp_sdk import MCPClient
 from sdk.mcp_sdk.client import SSEConnection
+import mcp
 
 
 class MCPToolCall:
@@ -53,7 +53,7 @@ class MCPToolCall:
             else:
                 return response.choices[0].message.content
 
-    async def execute_tool_call(self, tool_name: str, tool_args: dict):
+    async def execute_tool_call(self, tool_name: str, tool_args: dict) -> mcp.types.CallToolResult:
         async with MCPClient(
                 self.connections
         ) as mcp_client:
