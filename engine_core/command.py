@@ -4,12 +4,12 @@ import json
 from fastapi import WebSocket
 from loguru import logger
 
+from api import manager
 from engine_core.agent_core.MCPToolCall import MCPToolCall
 from engine_core.hmdb import connect_hmdb
 from engine_core.hmq import connect_hmq
 from engine_core.task_db import task_center
 from models import ChatCompletionRequest
-from websocket import manager
 
 # 命令注册表
 commands = {}
