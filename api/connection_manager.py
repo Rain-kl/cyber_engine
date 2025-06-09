@@ -4,10 +4,11 @@ from typing import List
 
 from fastapi import WebSocket
 from loguru import logger
+
 from models import ChatCompletionResponse, ChatCompletionChunkResponse
+from models.openai_chat.chat_completion import Choice
 from models.openai_chat.chat_completion_chunk import ChatCompletionChunk
 from models.openai_chat.chat_completion_message import ChatCompletionMessage
-from models.openai_chat.chat_completion import Choice
 
 
 class ConnectionManager:

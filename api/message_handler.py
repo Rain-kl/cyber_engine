@@ -1,14 +1,14 @@
 import time
 
 from fastapi import WebSocket
+
 from config import config
 from engine_core import Ponder
+from engine_core.command import commands  # 导入命令系统
 from engine_core.utils import ChunkWrapper
 from models import ChatCompletionRequest, ChatCompletionChunkResponse
-from models.ChatCompletionRequest import ExtraBody
 from models.openai_chat.chat_completion_chunk import Choice, ChoiceDelta
 from .connection_manager import manager
-from engine_core.command import commands  # 导入命令系统
 
 
 def generate_id():
