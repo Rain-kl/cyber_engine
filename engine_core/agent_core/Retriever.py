@@ -180,11 +180,8 @@ class Retriever(AgentBase):
 
                         traceback.print_exc()
                         yield f"\n[重新检索错误: {str(e)}]\n"
-
-            # 输出最终答案(如果不是通过流式方式生成的)
-            yield "\n<final_answer>\n"
-            yield f"{final_answer}"
-            yield "\n</final_answer>\n"
+            for word in f"\n<final_answer>\n\n{final_answer}\n</final_answer>\n":
+                yield word
 
         except Exception as e:
             print(f"整体执行错误: {e}")

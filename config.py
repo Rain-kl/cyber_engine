@@ -28,6 +28,10 @@ class Configer(BaseSettings):
     kb_api_key: str
     kb_dataset_id: str
 
+    # MCP 连接配置
+    mcp_basic_tools_transport: str = "sse"
+    mcp_basic_tools_url: str = "http://localhost:3001/sse"
+
     # 可以从配置文件加载配置
     class Config:
         env_file = ".env"

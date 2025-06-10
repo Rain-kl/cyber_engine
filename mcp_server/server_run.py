@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Run MCP SSE-based server")
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
-    parser.add_argument("--port", type=int, default=3001, help="Port to listen on")
+    parser.add_argument("--port", type=int, default=6899, help="Port to listen on")
     args = parser.parse_args()
 
     # Bind SSE request handling to MCP server

@@ -20,7 +20,7 @@ from .ws_utils import parse_input_msg
 
 app = FastAPI()
 MODEL_NAME = "ena-test"
-WAIT_TIMEOUT = 50
+WAIT_TIMEOUT = 20
 
 
 @app.websocket("/v1/{authorization}")

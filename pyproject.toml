@@ -16,6 +16,10 @@ dependencies = [
     "tqdm>=4.67.1",
     "uvicorn[standard]>=0.34.0",
     "websocket-client>=1.8.0",
-    "mcp>=1.6.0",
     "aiosmtplib>=4.0.0",
+    "mcp>=1.9.3",
 ]
+
+[[tool.uv.index]]
+url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
+default = true
