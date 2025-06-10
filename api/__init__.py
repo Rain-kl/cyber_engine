@@ -1,6 +1,7 @@
 import asyncio
 import json
 import time
+from http.client import HTTPException
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi import Request
@@ -74,7 +75,6 @@ async def stream_data(request: Request, completion_request: ChatCompletionReques
                 try:
                     # Add wait_for_timeout-second timeout for receive_message
                     response = await asyncio.wait_for(client.receive_message(), timeout=WAIT_TIMEOUT)
-
                     if not response.startswith("data:"):
                         raise ValueError("Invalid response format")
                     else:

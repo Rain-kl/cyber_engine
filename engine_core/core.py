@@ -1,10 +1,12 @@
+import asyncio
 import textwrap
 import time
 from typing import AsyncGenerator
 
 from loguru import logger
-
+from fastapi import HTTPException
 from models import ChatCompletionRequest, ChatCompletionChunkResponse
+from models.openai_chat.chat_completion_chunk import ChatCompletionChunk
 from .agent_core import AgentCore
 # from .core import EngineCore
 from .utils import ChunkWrapper
@@ -46,7 +48,7 @@ class Ponder:
         """).strip()
         return enhanced_context
 
-    async def run(self) -> AsyncGenerator[ChatCompletionChunkResponse, None]:
+    async def run(self) -> AsyncGenerator[ChatCompletionChunk | HTTPException , None]:
         """
         核心入口，处理输入，流式输出
 
@@ -65,6 +67,4 @@ class Ponder:
         except Exception as e:
             # 异常处理，确保错误被捕获并返回
             logger.exception(f"处理过程中出现错误: {str(e)}")
-            yield self.__chunk_wrapper.event_chunk_wrapper(
-                f"处理过程中出现错误: {str(e)}"
-            )
+            yield self.__chunk_wrapper.exception_chunk(e)
