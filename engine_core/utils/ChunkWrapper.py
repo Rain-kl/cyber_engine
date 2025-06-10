@@ -1,8 +1,10 @@
 from collections.abc import Callable
+from http.client import HTTPException
 from typing import Generator
 
 from config import config
 from models import ChatCompletionChunkResponse
+from models.ServerException import ServerException
 from models.openai_chat.chat_completion_chunk import (
     Choice,
     ChoiceDelta,
@@ -58,7 +60,7 @@ class ChunkWrapper:
         )
 
     def step_chunk_wrapper_stream(
-        self, step_tag, step_func: Callable, *args, **kwargs
+            self, step_tag, step_func: Callable, *args, **kwargs
     ) -> Generator[ChatCompletionChunk, None, None]:
         yield self.content_chunk_wrapper(f"<step>[{step_tag}]")
         response: str = step_func(*args, **kwargs)
@@ -68,7 +70,7 @@ class ChunkWrapper:
         yield self.content_chunk_wrapper("\n\n\n")
 
     def content_chunk_wrapper(
-        self, content: str, line_break=False
+            self, content: str, line_break=False
     ) -> ChatCompletionChunkResponse:
         if line_break:
             content = content + "\n\n"
@@ -104,3 +106,7 @@ class ChunkWrapper:
             object="chat.completion.chunk",
             system_fingerprint=self.system_fingerprint,
         )
+
+    @staticmethod
+    def exception_chunk(e: Exception):
+        return ServerException(500, f"Internal Server Error: {str(e)}")

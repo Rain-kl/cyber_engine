@@ -1,14 +1,14 @@
 import time
 
 from fastapi import WebSocket
+
 from config import config
 from engine_core import Ponder
+from engine_core.command import commands  # 导入命令系统
 from engine_core.utils import ChunkWrapper
 from models import ChatCompletionRequest, ChatCompletionChunkResponse
-from models.ChatCompletionRequest import ExtraBody
 from models.openai_chat.chat_completion_chunk import Choice, ChoiceDelta
 from .connection_manager import manager
-from engine_core.command import commands  # 导入命令系统
 
 
 def generate_id():
@@ -57,6 +57,9 @@ async def handle_message(
                 await manager.send_private_stream(
                     chunk_wrapper.content_chunk_wrapper(i), websocket
                 )
+            await manager.send_private_stream(
+                chunk_wrapper.finish_chunk(), websocket
+            )
     else:
         # 非命令消息处理
         # chat_completion_request.extra_body = ExtraBody(FC_flag=True)
@@ -64,24 +67,3 @@ async def handle_message(
             await manager.send_private_stream(chunk, websocket)
 
     await manager.send_private_stream(finish_chunk(init_id, init_created), websocket)
-
-    # for i in "Hello World":
-    #     await asyncio.sleep(0.3)
-    #     chunk = ChatCompletionChunkResponse(
-    #         id=init_id,
-    #         model=config.virtual_model,
-    #         choices=[
-    #             Choice(
-    #                 delta=ChoiceDelta(
-    #                     role="assistant",
-    #                     content=i,
-    #                 ),
-    #                 index=0,
-    #                 logprobs=None,
-    #                 finish_reason=None
-    #             )],
-    #         created=init_created,
-    #         object="chat.completion.chunk",
-    #         system_fingerprint=get_system_fingerprint()
-    #     )
-    #     await manager.send_private_stream(chunk, websocket)

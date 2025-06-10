@@ -1,14 +1,14 @@
 import time
 import uuid
 from typing import List
-
 from fastapi import WebSocket
 from loguru import logger
+
 from models import ChatCompletionResponse, ChatCompletionChunkResponse
+from models.openai_chat.chat_completion import Choice
 from models.openai_chat.chat_completion_chunk import ChatCompletionChunk
 from models.openai_chat.chat_completion_message import ChatCompletionMessage
-from models.openai_chat.chat_completion import Choice
-
+from models.ServerException import ServerException
 
 class ConnectionManager:
     def __init__(self):
@@ -47,7 +47,7 @@ class ConnectionManager:
 
     @staticmethod
     async def send_private_stream(
-        chunk: ChatCompletionChunkResponse, websocket: WebSocket
+            chunk: ChatCompletionChunkResponse | ServerException, websocket: WebSocket
     ):
         """
         以流的方式发送消息
@@ -55,6 +55,15 @@ class ConnectionManager:
         :param websocket:
         :return:
         """
+        if isinstance(chunk, ServerException):
+            error_response = {
+                "error": {
+                    "message": chunk.message,
+                    "type": "server_error",
+                    "code": f"{chunk.status_code}",
+                }
+            }
+            await websocket.send_text(f"data: {error_response}\n\n")
         if not isinstance(chunk, ChatCompletionChunkResponse):
             raise ValueError("Chunk must be a ChatCompletionChunkResponse")
         await websocket.send_text(f"data: {chunk.__str__()}\n\n")

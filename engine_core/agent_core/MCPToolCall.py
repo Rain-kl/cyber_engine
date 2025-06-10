@@ -1,5 +1,6 @@
 import mcp.types
 
+from config import config
 from sdk.mcp_sdk import MCPClient
 from sdk.mcp_sdk.client import SSEConnection
 
@@ -8,7 +9,8 @@ class MCPToolCall:
     def __init__(self):
         self.connections = {
             "basic_tools": SSEConnection(
-                transport="sse", url="http://localhost:3001/sse"
+                transport=config.mcp_basic_tools_transport,
+                url=config.mcp_basic_tools_url,
             )
         }
 
