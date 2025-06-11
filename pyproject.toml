@@ -18,6 +18,7 @@ dependencies = [
     "websocket-client>=1.8.0",
     "aiosmtplib>=4.0.0",
     "mcp>=1.9.3",
+    "tavily-python>=0.7.5",
 ]
 
 [[tool.uv.index]]
